@@ -3,14 +3,8 @@ from flask_jwt_extended import JWTManager
 from pymongo import MongoClient
 from flask_cors import CORS
 from dotenv import load_dotenv
-import os
 from .config import Config
-from .api.users import users_bp
-from .api.tasks import tasks_bp
-from .api.subtasks import subtasks_bp
-from .api.notifications import notifications_bp
-from .api.planner import planner_bp
-from .api.summaries import summaries_bp
+from .api import init_api
 
 def create_app():
     app = Flask(__name__)
@@ -21,18 +15,28 @@ def create_app():
     client = MongoClient(app.config["MONGO_URI"])
     app.db = client.get_database()
 
-    # Initialize JWT
-    jwt = JWTManager(app)
+    # Create indexes
+    app.db.users.create_index([("userId", 1)], unique=True)
+    app.db.users.create_index([("email", 1)], unique=True)
+    app.db.tasks.create_index([("taskId", 1)], unique=True)
+    app.db.tasks.create_index([("userId", 1)])
+    app.db.subtasks.create_index([("subtaskId", 1)], unique=True)
+    app.db.subtasks.create_index([("taskId", 1)])
+    app.db.notifications.create_index([("notificationId", 1)], unique=True)
+    app.db.notifications.create_index([("userId", 1)])
+    app.db.planner.create_index([("plannerId", 1)], unique=True)
+    app.db.planner.create_index([("userId", 1)])
+    app.db.planner.create_index([("date", 1)])
+    app.db.summaries.create_index([("summaryId", 1)], unique=True)
+    app.db.summaries.create_index([("userId", 1)])
 
-    # Enable CORS (optional)
+    # Initialize JWT
+    JWTManager(app)
+
+    # Enable CORS
     CORS(app)
 
-    # Register blueprints
-    app.register_blueprint(users_bp, url_prefix="/api/users")
-    app.register_blueprint(tasks_bp, url_prefix="/api/tasks")
-    app.register_blueprint(subtasks_bp, url_prefix="/api/subtasks")
-    app.register_blueprint(notifications_bp, url_prefix="/api/notifications")
-    app.register_blueprint(planner_bp, url_prefix="/api/planner")
-    app.register_blueprint(summaries_bp, url_prefix="/api/summaries")
+    # Register API blueprints
+    init_api(app)
 
     return app
