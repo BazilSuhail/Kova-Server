@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..services.task_service import create_task, get_tasks, get_task, update_task, delete_task
+from ..services.task_service import create_voice_task
 from ..utils import api_response
 
 tasks_bp = Blueprint("tasks", __name__)
@@ -18,6 +19,23 @@ def create():
         return api_response(task, 201)
     except Exception as e:
         return api_response({"message": f"Server error ss: {str(e)}"}, 500)
+    
+@tasks_bp.route("/create/voice", methods=["POST"])
+@jwt_required()
+def create_task_route():
+    user_id = get_jwt_identity()
+
+    if "file" not in request.files or not request.form.get("title"):
+        return api_response({"message": "Audio file and title required."}, 400)
+
+    file = request.files["file"]
+    title = request.form["title"]
+
+    try:
+        task = create_voice_task(tasks_bp.db, user_id, title, file.stream)
+        return api_response(task, 201)
+    except Exception as e:
+        return api_response({"message": f"Server error: {str(e)}"}, 500)
 
 @tasks_bp.route("/", methods=["GET"])
 @jwt_required()

@@ -1,5 +1,7 @@
 from bson import ObjectId
 from datetime import datetime
+from .. import upload_audio, transcribe_audio
+from app.utils.llm_utils import generate_task_fields_from_llm
 
 def create_task(db, data, user_id):
     task = {
@@ -13,6 +15,27 @@ def create_task(db, data, user_id):
         "createdFrom": data.get("createdFrom", "manual"),
         "createdAt": datetime.utcnow().isoformat()
     }
+    db.tasks.insert_one(task)
+    return task
+
+
+def create_voice_task(db, user_id, title, file_stream):
+    audio_url = upload_audio(file_stream)
+    transcript = transcribe_audio(audio_url)
+    task_fields = generate_task_fields_from_llm(title, transcript)
+
+    task = {
+        "taskId": str(ObjectId()),
+        "userId": user_id,
+        "title": title,
+        "description": task_fields.get("description", ""),
+        "category": task_fields.get("category", ""),
+        "dueDate": task_fields.get("dueDate", ""),
+        "isCompleted": False,
+        "createdFrom": "voice",
+        "createdAt": datetime.utcnow().isoformat()
+    }
+
     db.tasks.insert_one(task)
     return task
 
