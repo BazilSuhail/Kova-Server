@@ -1,6 +1,6 @@
 from bson import ObjectId
 from datetime import datetime
-from .. import upload_audio, transcribe_audio
+from app.utils.assemblyai_utils import upload_audio, transcribe_audio
 from app.utils.llm_utils import generate_task_fields_from_llm
 
 def create_task(db, data, user_id):

@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..services.summary_service import create_summary, get_summaries, update_summary, delete_summary
-from ..utils import api_response
+from app.utils.api_response import api_response
 
 summaries_bp = Blueprint("summaries", __name__)
 

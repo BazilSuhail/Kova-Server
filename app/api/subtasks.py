@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..services.subtask_service import create_subtask, get_subtasks, update_subtask, delete_subtask
-from ..utils import api_response
+from app.utils.api_response import api_response
 
 subtasks_bp = Blueprint("subtasks", __name__)
 

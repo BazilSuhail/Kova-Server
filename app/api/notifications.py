@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..services.notification_service import create_notification, get_notifications, update_notification, delete_notification
-from ..utils import api_response
+from app.utils.api_response import api_response
 
 notifications_bp = Blueprint("notifications", __name__)
 

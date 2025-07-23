@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from ..services.task_service import create_task, get_tasks, get_task, update_task, delete_task
 from ..services.task_service import create_voice_task
-from ..utils import api_response
+from app.utils.api_response import api_response
 
 tasks_bp = Blueprint("tasks", __name__)
 
