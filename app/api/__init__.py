@@ -8,6 +8,16 @@ from .planner import planner_bp
 from .summaries import summaries_bp
 
 def init_api(app):
+    # Inject app.db into blueprints
+    auth_bp.db = app.db
+    users_bp.db = app.db
+    tasks_bp.db = app.db
+    subtasks_bp.db = app.db
+    notifications_bp.db = app.db
+    planner_bp.db = app.db
+    summaries_bp.db = app.db
+
+    # Register blueprints
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(users_bp, url_prefix="/api/users")
     app.register_blueprint(tasks_bp, url_prefix="/api/tasks")

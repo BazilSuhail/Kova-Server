@@ -1,14 +1,12 @@
 from bson import ObjectId
 from datetime import datetime
 import bcrypt
-from .. import create_app
 
-app = create_app()
-db = app.db
-
-def signup_user(data):
+def signup_user(db, data):
+    print(f"Inside signup_user, db: {db}, data: {data}")  # Debug
     if db.users.find_one({"email": data["email"]}):
         raise ValueError("Email already exists")
+    print("sd")  # Debug
     hashed_password = bcrypt.hashpw(data["password"].encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
     user = {
         "userId": str(ObjectId()),
@@ -22,7 +20,8 @@ def signup_user(data):
     db.users.insert_one(user)
     return user
 
-def login_user(email, password):
+def login_user(db, email, password):
+    print(f"Inside login_user, db: {db}, email: {email}")  # Debug
     user = db.users.find_one({"email": email})
     if not user:
         raise ValueError("User not found")

@@ -13,32 +13,34 @@ def create():
         data = request.get_json()
         if not data or not "title" in data:
             return api_response({"message": "Title required"}, 400)
-        task = create_task(data, user_id)
+        task = create_task(tasks_bp.db, data, user_id)  # Use tasks_bp.db
+        print(task)
         return api_response(task, 201)
-    except Exception:
-        return api_response({"message": "Server error"}, 500)
+    except Exception as e:
+        return api_response({"message": f"Server error ss: {str(e)}"}, 500)
 
 @tasks_bp.route("/", methods=["GET"])
 @jwt_required()
 def list_tasks():
     try:
         user_id = get_jwt_identity()
-        tasks = get_tasks(user_id)
+        tasks = get_tasks(tasks_bp.db, user_id)  # Use tasks_bp.db
+        print(tasks)
         return api_response(tasks, 200)
-    except Exception:
-        return api_response({"message": "Server error"}, 500)
+    except Exception as e:
+        return api_response({"message": f"Server error: {str(e)}"}, 500)
 
 @tasks_bp.route("/<task_id>", methods=["GET"])
 @jwt_required()
 def get(task_id):
     try:
         user_id = get_jwt_identity()
-        task = get_task(task_id, user_id)
+        task = get_task(tasks_bp.db, task_id, user_id)  # Use tasks_bp.db
         if not task:
             return api_response({"message": "Task not found"}, 404)
         return api_response(task, 200)
-    except Exception:
-        return api_response({"message": "Server error"}, 500)
+    except Exception as e:
+        return api_response({"message": f"Server error: {str(e)}"}, 500)
 
 @tasks_bp.route("/<task_id>", methods=["PUT"])
 @jwt_required()
@@ -46,19 +48,19 @@ def update(task_id):
     try:
         user_id = get_jwt_identity()
         data = request.get_json()
-        if update_task(task_id, user_id, data):
+        if update_task(tasks_bp.db, task_id, user_id, data):  # Use tasks_bp.db
             return api_response({"message": "Task updated"}, 200)
         return api_response({"message": "Task not found"}, 404)
-    except Exception:
-        return api_response({"message": "Server error"}, 500)
+    except Exception as e:
+        return api_response({"message": f"Server error: {str(e)}"}, 500)
 
 @tasks_bp.route("/<task_id>", methods=["DELETE"])
 @jwt_required()
 def delete(task_id):
     try:
         user_id = get_jwt_identity()
-        if delete_task(task_id, user_id):
+        if delete_task(tasks_bp.db, task_id, user_id):  # Use tasks_bp.db
             return api_response({"message": "Task deleted"}, 200)
         return api_response({"message": "Task not found"}, 404)
-    except Exception:
-        return api_response({"message": "Server error"}, 500)
+    except Exception as e:
+        return api_response({"message": f"Server error: {str(e)}"}, 500)

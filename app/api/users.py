@@ -10,12 +10,12 @@ users_bp = Blueprint("users", __name__)
 def get_profile():
     try:
         user_id = get_jwt_identity()
-        user = get_user_by_id(user_id)
+        user = get_user_by_id(users_bp.db, user_id)  # Use users_bp.db
         return api_response(user, 200)
     except ValueError as e:
         return api_response({"message": str(e)}, 404)
-    except Exception:
-        return api_response({"message": "Server error"}, 500)
+    except Exception as e:
+        return api_response({"message": f"Server error: {str(e)}"}, 500)
 
 @users_bp.route("/profile", methods=["PUT"])
 @jwt_required()
@@ -23,21 +23,21 @@ def update_profile():
     try:
         user_id = get_jwt_identity()
         data = request.get_json()
-        updated_user = update_user(user_id, data)
+        updated_user = update_user(users_bp.db, user_id, data)  # Use users_bp.db
         return api_response(updated_user, 200)
     except ValueError as e:
         return api_response({"message": str(e)}, 400)
-    except Exception:
-        return api_response({"message": "Server error"}, 500)
+    except Exception as e:
+        return api_response({"message": f"Server error: {str(e)}"}, 500)
 
 @users_bp.route("/profile", methods=["DELETE"])
 @jwt_required()
 def delete_profile():
     try:
         user_id = get_jwt_identity()
-        delete_user(user_id)
+        delete_user(users_bp.db, user_id)  # Use users_bp.db
         return api_response({"message": "User deleted"}, 200)
     except ValueError as e:
         return api_response({"message": str(e)}, 404)
-    except Exception:
-        return api_response({"message": "Server error"}, 500)
+    except Exception as e:
+        return api_response({"message": f"Server error: {str(e)}"}, 500)

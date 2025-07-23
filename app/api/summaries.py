@@ -13,20 +13,20 @@ def create():
         data = request.get_json()
         if not data or not "sourceType" in data:
             return api_response({"message": "Source type required"}, 400)
-        summary = create_summary(data, user_id)
+        summary = create_summary(summaries_bp.db, data, user_id)  # Use summaries_bp.db
         return api_response(summary, 201)
-    except Exception:
-        return api_response({"message": "Server error"}, 500)
+    except Exception as e:
+        return api_response({"message": f"Server error: {str(e)}"}, 500)
 
 @summaries_bp.route("/", methods=["GET"])
 @jwt_required()
 def list_summaries():
     try:
         user_id = get_jwt_identity()
-        summaries = get_summaries(user_id)
+        summaries = get_summaries(summaries_bp.db, user_id)  # Use summaries_bp.db
         return api_response(summaries, 200)
-    except Exception:
-        return api_response({"message": "Server error"}, 500)
+    except Exception as e:
+        return api_response({"message": f"Server error: {str(e)}"}, 500)
 
 @summaries_bp.route("/<summary_id>", methods=["PUT"])
 @jwt_required()
@@ -34,19 +34,19 @@ def update(summary_id):
     try:
         user_id = get_jwt_identity()
         data = request.get_json()
-        if update_summary(summary_id, user_id, data):
+        if update_summary(summaries_bp.db, summary_id, user_id, data):  # Use summaries_bp.db
             return api_response({"message": "Summary updated"}, 200)
         return api_response({"message": "Summary not found"}, 404)
-    except Exception:
-        return api_response({"message": "Server error"}, 500)
+    except Exception as e:
+        return api_response({"message": f"Server error: {str(e)}"}, 500)
 
 @summaries_bp.route("/<summary_id>", methods=["DELETE"])
 @jwt_required()
 def delete(summary_id):
     try:
         user_id = get_jwt_identity()
-        if delete_summary(summary_id, user_id):
+        if delete_summary(summaries_bp.db, summary_id, user_id):  # Use summaries_bp.db
             return api_response({"message": "Summary deleted"}, 200)
         return api_response({"message": "Summary not found"}, 404)
-    except Exception:
-        return api_response({"message": "Server error"}, 500)
+    except Exception as e:
+        return api_response({"message": f"Server error: {str(e)}"}, 500)

@@ -1,11 +1,7 @@
 from bson import ObjectId
 from datetime import datetime
-from .. import create_app
 
-app = create_app()
-db = app.db
-
-def create_notification(data, user_id):
+def create_notification(db, data, user_id):
     notification = {
         "notificationId": str(ObjectId()),
         "userId": user_id,
@@ -18,10 +14,10 @@ def create_notification(data, user_id):
     db.notifications.insert_one(notification)
     return notification
 
-def get_notifications(user_id):
+def get_notifications(db, user_id):
     return list(db.notifications.find({"userId": user_id}))
 
-def update_notification(notification_id, user_id, data):
+def update_notification(db, notification_id, user_id, data):
     update_data = {k: v for k, v in data.items() if k in ["read"]}
     result = db.notifications.update_one(
         {"notificationId": notification_id, "userId": user_id},
@@ -29,6 +25,6 @@ def update_notification(notification_id, user_id, data):
     )
     return result.modified_count > 0
 
-def delete_notification(notification_id, user_id):
+def delete_notification(db, notification_id, user_id):
     result = db.notifications.delete_one({"notificationId": notification_id, "userId": user_id})
     return result.deleted_count > 0
