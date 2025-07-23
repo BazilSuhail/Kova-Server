@@ -2,7 +2,7 @@ import requests
 import json
 from flask import current_app
 
-def generate_task_fields_from_llm(title,transcript):
+def generate_task_fields_from_llm(transcript):
     # Get config values from Flask app context
     groq_api_key = current_app.config['GROQ_API_KEY']
     groq_llm_url = current_app.config.get('GROQ_LLM_URL', 'https://api.groq.com/openai/v1/chat/completions')

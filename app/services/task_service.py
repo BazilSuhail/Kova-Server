@@ -18,16 +18,33 @@ def create_task(db, data, user_id):
     db.tasks.insert_one(task)
     return task
 
-
-def create_voice_task(db, user_id, title, file_stream):
-    audio_url = upload_audio(file_stream)
-    transcript = transcribe_audio(audio_url)
-    task_fields = generate_task_fields_from_llm(title, transcript)
-
+def create_nlp_task(db, user_id, prompt): 
+    task_fields = generate_task_fields_from_llm(prompt)
+    print(task_fields)
     task = {
         "taskId": str(ObjectId()),
         "userId": user_id,
-        "title": title,
+        "title": task_fields.get("title", ""),
+        "description": task_fields.get("description", ""),
+        "category": task_fields.get("category", ""),
+        "dueDate": task_fields.get("dueDate", ""),
+        "isCompleted": False,
+        "createdFrom": "natural-language",
+        "createdAt": datetime.utcnow().isoformat()
+    }
+
+    db.tasks.insert_one(task)
+    return task
+
+def create_voice_task(db, user_id, file_stream):
+    audio_url = upload_audio(file_stream)
+    transcript = transcribe_audio(audio_url)
+    task_fields = generate_task_fields_from_llm(transcript)
+    print(task_fields)
+    task = {
+        "taskId": str(ObjectId()),
+        "userId": user_id,
+        "title": task_fields.get("title", ""),
         "description": task_fields.get("description", ""),
         "category": task_fields.get("category", ""),
         "dueDate": task_fields.get("dueDate", ""),
