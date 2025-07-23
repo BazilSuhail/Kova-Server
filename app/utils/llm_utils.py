@@ -2,22 +2,27 @@ import requests
 import json
 from flask import current_app
 
-def generate_task_fields_from_llm(title, transcript):
+def generate_task_fields_from_llm(title,transcript):
     # Get config values from Flask app context
     groq_api_key = current_app.config['GROQ_API_KEY']
     groq_llm_url = current_app.config.get('GROQ_LLM_URL', 'https://api.groq.com/openai/v1/chat/completions')
     
     prompt = (
-        "You are a task generator. Given a task title and a voice-to-text transcript, "
-        "return a JSON object with the fields: description, category, dueDate (YYYY-MM-DD). "
-        "Set createdFrom to 'voice'."
+        "You are a smart task generator. Given a natural language prompt, extract the user's intention "
+        "and create a task object with the following fields:\n"
+        "- title: a short general title (auto-generated)\n"
+        "- description: a detailed description of 30 to 40 words\n"
+        "- category: e.g., work, personal, study, health, etc.\n"
+        "- dueDate: infer an appropriate due date in YYYY-MM-DD format based on the prompt\n"
+        "- createdFrom: set this to 'auto'\n\n"
+        "Respond with a valid JSON object."
     )
 
     payload = {
         "model": "llama3-70b-8192",
         "messages": [
             {"role": "system", "content": prompt},
-            {"role": "user", "content": f"title: {title}\ntranscript: {transcript}"}
+            {"role": "user", "content": transcript}
         ],
         "max_tokens": 200,
         "temperature": 0.7,
@@ -40,7 +45,7 @@ def generate_task_fields_from_llm(title, transcript):
         result = json.loads(content)
         
         # Validate required fields
-        required_fields = ['description', 'category', 'dueDate']
+        required_fields = ['title', 'description', 'category', 'dueDate', 'createdFrom']
         if not all(field in result for field in required_fields):
             raise ValueError("LLM response missing required fields")
             
