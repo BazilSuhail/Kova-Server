@@ -1,4 +1,5 @@
 from .auth_service import signup_user, login_user
+from .user_service import get_user_by_id, update_user, delete_user
 from .task_service import create_task, get_tasks, get_task, update_task, delete_task
 from .subtask_service import create_subtask, get_subtasks, update_subtask, delete_subtask
 from .notification_service import create_notification, get_notifications, update_notification, delete_notification
