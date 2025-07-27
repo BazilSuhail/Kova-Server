@@ -4,16 +4,16 @@ from app.utils.summary_utils import generate_summary_from_llm
 
 def create_summary(db, user_id, extracted_text, original_filename):
     # Feed text to LLM
-    task_fields = generate_summary_from_llm(extracted_text)
+    summary_bullets = generate_summary_from_llm(extracted_text)
 
-    # Create task object
+    # Create task object (you can set proper values later from another process)
     task = {
         "taskId": str(ObjectId()),
         "userId": user_id,
-        "title": task_fields.get("title", ""),
-        "description": task_fields.get("description", ""),
-        "category": task_fields.get("category", ""),
-        "dueDate": task_fields.get("dueDate", ""),
+        "title": "Summary Task",
+        "description": " ".join(summary_bullets),  # or pick summary_bullets[0] as main point
+        "category": "Uncategorized",
+        "dueDate": "",
         "isCompleted": False,
         "createdFrom": "natural-language",
         "created_at": datetime.now(timezone.utc).isoformat()
@@ -25,7 +25,7 @@ def create_summary(db, user_id, extracted_text, original_filename):
         "userId": user_id,
         "sourceType": "pdf",
         "originalFileName": original_filename,
-        "summaryBullets": [task_fields.get("description", "")],
+        "summaryBullets": summary_bullets,
         "createdAt": datetime.utcnow().isoformat()
     }
 
@@ -35,6 +35,7 @@ def create_summary(db, user_id, extracted_text, original_filename):
         "summary": summary,
         "task": task
     }
+
 
 # def create_summary(db, data, user_id):
 #     summary = {

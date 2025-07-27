@@ -21,11 +21,14 @@ def generate_summary_from_llm(transcript):
         "which may contain unstructured or verbose content.\n\n"
         "Your job is to carefully read and understand the content, and return a **clean, concise bullet-point summary** "
         "with a minimum of 4 and a maximum of 9 points.\n\n"
-        "Each bullet should:\n"
-        "- Be clear and self-contained\n"
-        "- Use complete sentences\n"
-        "- Reflect a distinct point or topic from the content\n\n"
-        "Respond with a JSON array of strings. Do not include any text outside the JSON."
+        "**IMPORTANT**: Respond ONLY with a JSON array of 4–9 bullet points. Do NOT include any explanation, "
+        "markdown formatting, or extra text. Return only the JSON array.\n\n"
+        "Example:\n"
+        "[\n"
+        "  \"This is the first point.\",\n"
+        "  \"This is the second point.\",\n"
+        "  ...\n"
+        "]"
     )
 
     payload = {
@@ -35,8 +38,7 @@ def generate_summary_from_llm(transcript):
             {"role": "user", "content": transcript}
         ],
         "max_tokens": 500,
-        "temperature": 0.5,
-        "response_format": {"type": "json_object"}  # Ensure valid JSON
+        "temperature": 0.5
     }
 
     headers = {
@@ -50,6 +52,8 @@ def generate_summary_from_llm(transcript):
 
         response_data = res.json()
         content = response_data["choices"][0]["message"]["content"]
+
+        print("LLM raw response content:", content)  # helpful for debugging
 
         # Parse LLM output (must be a JSON array of strings)
         summary_bullets = json.loads(content)
