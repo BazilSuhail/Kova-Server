@@ -1,17 +1,52 @@
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timezone 
+from app.utils.summary_utils import generate_summary_from_llm
 
-def create_summary(db, data, user_id):
+def create_summary(db, user_id, extracted_text, original_filename):
+    # Feed text to LLM
+    task_fields = generate_summary_from_llm(extracted_text)
+
+    # Create task object
+    task = {
+        "taskId": str(ObjectId()),
+        "userId": user_id,
+        "title": task_fields.get("title", ""),
+        "description": task_fields.get("description", ""),
+        "category": task_fields.get("category", ""),
+        "dueDate": task_fields.get("dueDate", ""),
+        "isCompleted": False,
+        "createdFrom": "natural-language",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+
+    # Create summary
     summary = {
         "summaryId": str(ObjectId()),
         "userId": user_id,
-        "sourceType": data["sourceType"],
-        "originalFileName": data.get("originalFileName", ""),
-        "summaryBullets": data.get("summaryBullets", []),
+        "sourceType": "pdf",
+        "originalFileName": original_filename,
+        "summaryBullets": [task_fields.get("description", "")],
         "createdAt": datetime.utcnow().isoformat()
     }
+
     db.summaries.insert_one(summary)
-    return summary
+
+    return {
+        "summary": summary,
+        "task": task
+    }
+
+# def create_summary(db, data, user_id):
+#     summary = {
+#         "summaryId": str(ObjectId()),
+#         "userId": user_id,
+#         "sourceType": data["sourceType"],
+#         "originalFileName": data.get("originalFileName", ""),
+#         "summaryBullets": data.get("summaryBullets", []),
+#         "createdAt": datetime.utcnow().isoformat()
+#     }
+#     db.summaries.insert_one(summary)
+#     return summary
 
 def get_summaries(db, user_id):
     return list(db.summaries.find({"userId": user_id}))
