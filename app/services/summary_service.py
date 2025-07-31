@@ -36,19 +36,6 @@ def create_summary(db, user_id, extracted_text, original_filename):
         "task": task
     }
 
-
-# def create_summary(db, data, user_id):
-#     summary = {
-#         "summaryId": str(ObjectId()),
-#         "userId": user_id,
-#         "sourceType": data["sourceType"],
-#         "originalFileName": data.get("originalFileName", ""),
-#         "summaryBullets": data.get("summaryBullets", []),
-#         "createdAt": datetime.utcnow().isoformat()
-#     }
-#     db.summaries.insert_one(summary)
-#     return summary
-
 def get_summaries(db, user_id):
     return list(db.summaries.find({"userId": user_id}))
 
