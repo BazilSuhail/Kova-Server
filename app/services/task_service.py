@@ -1,5 +1,5 @@
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timezone
 from app.utils.assemblyai_utils import upload_audio, transcribe_audio
 from app.utils.llm_utils import generate_task_fields_from_llm
 
@@ -13,7 +13,7 @@ def create_task(db, data, user_id):
         "dueDate": data.get("dueDate", ""),
         "isCompleted": False,
         "createdFrom": data.get("createdFrom", "manual"),
-        "createdAt": datetime.utcnow().isoformat()
+        "createdAt": datetime.now(timezone.utc).isoformat()
     }
     db.tasks.insert_one(task)
     return task
@@ -30,7 +30,7 @@ def create_nlp_task(db, user_id, prompt):
         "dueDate": task_fields.get("dueDate", ""),
         "isCompleted": False,
         "createdFrom": "natural-language",
-        "createdAt": datetime.utcnow().isoformat()
+        "createdAt": datetime.now(timezone.utc).isoformat()
     }
 
     db.tasks.insert_one(task)
@@ -50,7 +50,7 @@ def create_voice_task(db, user_id, file_stream):
         "dueDate": task_fields.get("dueDate", ""),
         "isCompleted": False,
         "createdFrom": "voice",
-        "createdAt": datetime.utcnow().isoformat()
+        "createdAt": datetime.now(timezone.utc).isoformat()
     }
 
     db.tasks.insert_one(task)

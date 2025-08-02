@@ -1,5 +1,5 @@
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timezone
 
 def create_notification(db, data, user_id):
     notification = {
@@ -9,7 +9,7 @@ def create_notification(db, data, user_id):
         "message": data["message"],
         "read": False,
         "type": data.get("type", "reminder"),
-        "createdAt": datetime.utcnow().isoformat()
+        "createdAt": datetime.now(timezone.utc).isoformat()
     }
     db.notifications.insert_one(notification)
     return notification
