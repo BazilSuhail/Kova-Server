@@ -5,20 +5,25 @@ from app.utils.api_response import api_response
 
 subtasks_bp = Blueprint("subtasks", __name__)
 
-@subtasks_bp.route("/task/<task_id>", methods=["POST"])
+@subtasks_bp.route("/create", methods=["POST"])
 @jwt_required()
-def create(task_id):
+def create():
     try:
         user_id = get_jwt_identity()
         data = request.get_json()
-        if not data or not "title" in data:
-            return api_response({"message": "Title required"}, 400)
-        subtask = create_subtask(subtasks_bp.db, data, user_id, task_id)  # Use subtasks_bp.db
+
+        if not data or "taskId" not in data:
+            return api_response({"message": "taskId is required"}, 400)
+
+        task_id = data["taskId"]
+        subtask = create_subtask(subtasks_bp.db, data, user_id, task_id)
         return api_response(subtask, 201)
+
     except ValueError as e:
         return api_response({"message": str(e)}, 404)
     except Exception as e:
         return api_response({"message": f"Server error: {str(e)}"}, 500)
+
 
 @subtasks_bp.route("/task/<task_id>", methods=["GET"])
 @jwt_required()
