@@ -13,7 +13,8 @@ def create_task(db, data, user_id):
         "dueDate": data.get("dueDate", ""),
         "isCompleted": False,
         "createdFrom": data.get("createdFrom", "manual"),
-        "createdAt": datetime.now(timezone.utc).isoformat()
+        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "hasSubtasks": False,
     }
     db.tasks.insert_one(task)
     return task
@@ -30,7 +31,8 @@ def create_nlp_task(db, user_id, prompt):
         "dueDate": task_fields.get("dueDate", ""),
         "isCompleted": False,
         "createdFrom": "natural-language",
-        "createdAt": datetime.now(timezone.utc).isoformat()
+        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "hasSubtasks": False,
     }
 
     db.tasks.insert_one(task)
@@ -50,7 +52,8 @@ def create_voice_task(db, user_id, file_stream):
         "dueDate": task_fields.get("dueDate", ""),
         "isCompleted": False,
         "createdFrom": "voice",
-        "createdAt": datetime.now(timezone.utc).isoformat()
+        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "hasSubtasks": False,
     }
 
     db.tasks.insert_one(task)

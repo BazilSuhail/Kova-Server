@@ -1,5 +1,5 @@
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timezone
 
 def task_schema(data=None):
     data = data or {}
@@ -12,6 +12,6 @@ def task_schema(data=None):
         "dueDate": data.get("dueDate", ""),
         "isCompleted": data.get("isCompleted", False),
         "createdFrom": data.get("createdFrom", "manual"),  # default to manual
-        "createdAt": datetime.utcnow().isoformat(),
-        "subtasks": data.get("subtasks", [])  # default: empty list
+        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "hasSubtasks": data.get("hasSubtasks", False),
     }
