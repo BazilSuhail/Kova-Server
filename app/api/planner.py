@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from ..services.planner_service import create_planner, get_planners, update_planner, delete_planner
+from ..services.planner_service import create_planner, get_planners, update_focus_tasks, update_tasks_array, delete_planner
 from app.utils.api_response import api_response
 
 planner_bp = Blueprint("planner", __name__)
