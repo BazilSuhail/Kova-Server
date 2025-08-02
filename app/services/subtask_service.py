@@ -28,9 +28,23 @@ def create_subtask(db, data, user_id, task_id):
     return subtask_doc
 
 
-
 def get_subtasks(db, task_id, user_id):
-    return list(db.subtasks.find({"taskId": task_id}))
+    task = db.tasks.find_one({"taskId": task_id, "userId": user_id})
+    if not task:
+        raise ValueError("Task not found")
+
+    subtasks_cursor = db.subtasks.find({"taskId": task_id})
+    return [
+        {
+            "subtaskId": subtask["subtaskId"],
+            "title": subtask.get("title", ""),
+            "order": subtask.get("order", 1),
+            "done": subtask.get("done", False),
+            "subTasks": subtask.get("subTasks", [])
+        }
+        for subtask in subtasks_cursor
+    ]
+
 
 def update_subtask(db, subtask_id, user_id, data):
     subtask = db.subtasks.find_one({"subtaskId": subtask_id})
@@ -40,9 +54,11 @@ def update_subtask(db, subtask_id, user_id, data):
     result = db.subtasks.update_one({"subtaskId": subtask_id}, {"$set": update_data})
     return result.modified_count > 0
 
-def delete_subtask(db, subtask_id, user_id):
-    subtask = db.subtasks.find_one({"subtaskId": subtask_id})
-    if not subtask or not db.tasks.find_one({"taskId": subtask["taskId"], "userId": user_id}):
-        return False
-    result = db.subtasks.delete_one({"subtaskId": subtask_id})
-    return result.deleted_count > 0
+def delete_subtasks(db, task_id):
+    # Delete all subtasks related to this task
+    result = db.subtasks.delete_many({"taskId": task_id})
+
+    # Set hasSubtasks to false in the parent task
+    db.tasks.update_one({"taskId": task_id}, {"$set": {"hasSubtasks": False}})
+
+    return result.deleted_count
