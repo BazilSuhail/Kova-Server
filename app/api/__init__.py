@@ -6,6 +6,7 @@ from .subtasks import subtasks_bp
 from .notifications import notifications_bp
 from .planner import planner_bp
 from .summaries import summaries_bp
+from .dailyRecap import daily_recap_bp
 
 def init_api(app):
     # Inject app.db into blueprints
@@ -16,6 +17,8 @@ def init_api(app):
     notifications_bp.db = app.db
     planner_bp.db = app.db
     summaries_bp.db = app.db
+    summaries_bp.db = app.db
+    daily_recap_bp.db = app.db
 
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
@@ -25,3 +28,4 @@ def init_api(app):
     app.register_blueprint(notifications_bp, url_prefix="/api/notifications")
     app.register_blueprint(planner_bp, url_prefix="/api/planner")
     app.register_blueprint(summaries_bp, url_prefix="/api/summaries")
+    app.register_blueprint(daily_recap_bp, url_prefix="/api/daily-recap")
