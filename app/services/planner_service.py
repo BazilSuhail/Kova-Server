@@ -7,8 +7,7 @@ def create_planner(db, data, user_id):
         "date": data["date"],
         "focusTasks": data.get("focusTasks", []),
         "tasks": data.get("tasks", []),  # Default empty if not provided
-        "reflection": data.get("reflection", ""),
-        "mood": data.get("mood", "")
+        "reflection": data.get("reflection", ""), 
     }
     db.planner.insert_one(planner)
     return planner

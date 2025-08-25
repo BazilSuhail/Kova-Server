@@ -8,6 +8,5 @@ def planner_schema():
         "date": datetime.now(timezone.utc).isoformat(),  # ISO timestamp
         "focusTasks": [],    # List of focus task titles or IDs (your choice)
         "tasks": [],         # ✅ General task titles or IDs
-        "reflection": "",
-        "mood": ""           # e.g., "happy", "focused", "tired"
+        "reflection": "", 
     }
