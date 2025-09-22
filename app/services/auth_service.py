@@ -21,7 +21,7 @@ def signup_user(db, data):
     return user
 
 def login_user(db, email, password):
-    print(f"Inside login_user, db: {db}, email: {email}")  # Debug
+    # print(f"Inside login_user, db: {db}, email: {email}")  # Debug
     user = db.users.find_one({"email": email})
     if not user:
         raise ValueError("User not found")

@@ -28,10 +28,10 @@ def signup():
 def login():
     try:
         data = request.get_json()
-        print(f"Received login data: {data}")  # Debug
+        
         if not data or not all(key in data for key in ["email", "password"]):
             return api_response({"message": "Missing required fields"}, 400)
-        print(f"Attempting to access db: {auth_bp.db}")  # Debug
+        
         user = login_user(auth_bp.db, data["email"], data["password"])  # Use auth_bp.db
         print(f"User logged in: {user}")  # Debug
         access_token = create_access_token(identity=user["userId"])
