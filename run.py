@@ -1,5 +1,14 @@
 import os
 import sys
+
+# Windows consoles default to a legacy codepage (cp1252); without this the
+# startup banners and any non-ASCII output crash the process whenever stdout
+# is redirected (CI, service managers, `> server.log`). Idempotent + safe.
+for _stream in (sys.stdout, sys.stderr):
+    _reconfigure = getattr(_stream, "reconfigure", None)
+    if _reconfigure is not None:
+        _reconfigure(encoding="utf-8", errors="replace")
+
 from app import create_app
 
 # Create the Flask app instance

@@ -1,64 +1,82 @@
+"""Subtask generation/listing tied to a parent task.
+
+Subtasks are created as one document holding an LLM-generated ``subTasks``
+array — the API never creates individual subtask rows.
+"""
+from __future__ import annotations
+
+from typing import Any
+
 from bson import ObjectId
-from app.utils.sub_tasks_utils import make_subTasks_from_tasks_description
 
-def create_subtask(db, data, user_id, task_id):
-    task = db.tasks.find_one({"taskId": task_id, "userId": user_id})
-    if not task:
-        raise ValueError("Task not found")
+from ..core.exceptions import NotFoundError
+from ..repositories.subtask_repository import SubtaskRepository
+from ..repositories.task_repository import TaskRepository
+from ..utils.sub_tasks_utils import generate_subtasks_from_description
 
-    # Mark the task as having subtasks if not already
-    if not task.get("hasSubtasks", False):
-        db.tasks.update_one({"taskId": task_id}, {"$set": {"hasSubtasks": True}})
-
-    # Extract subtask strings from task description
-    description = task.get("description", "")
-    subtask_lines = make_subTasks_from_tasks_description(description)
-
-    # Create a single subtask document with subTasks array
-    subtask_doc = {
-        "subtaskId": str(ObjectId()),
-        "taskId": task_id,
-        "title": data.get("title", "Generated subtasks"),
-        "done": False,
-        "order": data.get("order", 1),
-        "subTasks": subtask_lines
-    }
-
-    db.subtasks.insert_one(subtask_doc)
-    return subtask_doc
+# Whitelist for partial updates.
+_UPDATABLE_FIELDS = ("title", "done", "order")
 
 
-def get_subtasks(db, task_id, user_id):
-    task = db.tasks.find_one({"taskId": task_id, "userId": user_id})
-    if not task:
-        raise ValueError("Task not found")
+class SubtaskService:
+    def __init__(self, subtasks: SubtaskRepository, tasks: TaskRepository) -> None:
+        self._subtasks = subtasks
+        self._tasks = tasks
 
-    subtasks_cursor = db.subtasks.find({"taskId": task_id})
-    return [
-        {
-            "subtaskId": subtask["subtaskId"],
-            "title": subtask.get("title", ""),
-            "order": subtask.get("order", 1),
-            "done": subtask.get("done", False),
-            "subTasks": subtask.get("subTasks", [])
+    def create(self, data: dict[str, Any], user_id: str, task_id: str) -> dict[str, Any]:
+        """Generate subtasks for an owned task from its description."""
+        task = self._tasks.find_for_user(task_id, user_id)
+        if task is None:
+            raise NotFoundError("Task not found")
+        if not task.get("hasSubtasks", False):
+            self._tasks.set_has_subtasks(task_id, True)
+        try:
+            subtask_lines = generate_subtasks_from_description(
+                task.get("description", "")
+            )
+        except ValueError as exc:
+            # Legacy route mapped *every* ValueError to 404 (LLM parse failures
+            # included). Preserved as-is; see docs/TODO.md for the follow-up.
+            raise NotFoundError(str(exc)) from exc
+        document = {
+            "subtaskId": str(ObjectId()),
+            "taskId": task_id,
+            "title": data.get("title", "Generated subtasks"),
+            "done": False,
+            "order": data.get("order", 1),
+            "subTasks": subtask_lines,
         }
-        for subtask in subtasks_cursor
-    ]
+        return self._subtasks.insert(document)
 
+    def list(self, task_id: str, user_id: str) -> list[dict[str, Any]]:
+        """List a task's subtasks, shaped exactly like the legacy response."""
+        if self._tasks.find_for_user(task_id, user_id) is None:
+            raise NotFoundError("Task not found")
+        return [
+            {
+                "subtaskId": subtask["subtaskId"],
+                "title": subtask.get("title", ""),
+                "order": subtask.get("order", 1),
+                "done": subtask.get("done", False),
+                "subTasks": subtask.get("subTasks", []),
+            }
+            for subtask in self._subtasks.find_by_task(task_id)
+        ]
 
-def update_subtask(db, subtask_id, user_id, data):
-    subtask = db.subtasks.find_one({"subtaskId": subtask_id})
-    if not subtask or not db.tasks.find_one({"taskId": subtask["taskId"], "userId": user_id}):
-        return False
-    update_data = {k: v for k, v in data.items() if k in ["title", "done", "order"]}
-    result = db.subtasks.update_one({"subtaskId": subtask_id}, {"$set": update_data})
-    return result.modified_count > 0
+    def update(self, subtask_id: str, user_id: str, data: dict[str, Any]) -> bool:
+        """Partial update; ownership is proven through the parent task."""
+        subtask = self._subtasks.find_by_subtask_id(subtask_id)
+        if subtask is None:
+            return False
+        if self._tasks.find_for_user(subtask["taskId"], user_id) is None:
+            return False
+        fields = {k: v for k, v in data.items() if k in _UPDATABLE_FIELDS}
+        return self._subtasks.update_fields(subtask_id, fields) > 0
 
-def delete_subtasks(db, task_id):
-    # Delete all subtasks related to this task
-    result = db.subtasks.delete_many({"taskId": task_id})
-
-    # Set hasSubtasks to false in the parent task
-    db.tasks.update_one({"taskId": task_id}, {"$set": {"hasSubtasks": False}})
-
-    return result.deleted_count
+    def delete_for_task(self, task_id: str, user_id: str) -> int:
+        """Delete *all* subtasks of an owned task; returns how many went away."""
+        if self._tasks.find_for_user(task_id, user_id) is None:
+            raise NotFoundError("Task not found")
+        deleted = self._subtasks.delete_by_task(task_id)
+        self._tasks.set_has_subtasks(task_id, False)
+        return deleted

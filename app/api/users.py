@@ -1,43 +1,34 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from ..services.user_service import get_user_by_id, update_user, delete_user
-from app.utils.api_response import api_response
+"""Current-user profile routes (read/update/delete the caller's own account)."""
+from __future__ import annotations
+
+from flask import Blueprint, Response, request
+from flask_jwt_extended import get_jwt_identity, jwt_required
+
+from ..core.responses import api_response
+from ..services import get_services
 
 users_bp = Blueprint("users", __name__)
 
+
 @users_bp.route("/profile", methods=["GET"])
 @jwt_required()
-def get_profile():
-    try:
-        user_id = get_jwt_identity()
-        user = get_user_by_id(users_bp.db, user_id)  # Use users_bp.db
-        return api_response(user, 200)
-    except ValueError as e:
-        return api_response({"message": str(e)}, 404)
-    except Exception as e:
-        return api_response({"message": f"Server error: {str(e)}"}, 500)
+def get_profile() -> Response:
+    """Return the caller's profile without the password hash."""
+    user = get_services().users.get_profile(get_jwt_identity())
+    return api_response(user, 200)
+
 
 @users_bp.route("/profile", methods=["PUT"])
 @jwt_required()
-def update_profile():
-    try:
-        user_id = get_jwt_identity()
-        data = request.get_json()
-        updated_user = update_user(users_bp.db, user_id, data)  # Use users_bp.db
-        return api_response(updated_user, 200)
-    except ValueError as e:
-        return api_response({"message": str(e)}, 400)
-    except Exception as e:
-        return api_response({"message": f"Server error: {str(e)}"}, 500)
+def update_profile() -> Response:
+    """Apply whitelisted profile changes and return the refreshed profile."""
+    updated = get_services().users.update_profile(get_jwt_identity(), request.get_json())
+    return api_response(updated, 200)
+
 
 @users_bp.route("/profile", methods=["DELETE"])
 @jwt_required()
-def delete_profile():
-    try:
-        user_id = get_jwt_identity()
-        delete_user(users_bp.db, user_id)  # Use users_bp.db
-        return api_response({"message": "User deleted"}, 200)
-    except ValueError as e:
-        return api_response({"message": str(e)}, 404)
-    except Exception as e:
-        return api_response({"message": f"Server error: {str(e)}"}, 500)
+def delete_profile() -> Response:
+    """Delete the caller's account document."""
+    get_services().users.delete_profile(get_jwt_identity())
+    return api_response({"message": "User deleted"}, 200)

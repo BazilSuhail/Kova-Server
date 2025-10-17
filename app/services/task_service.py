@@ -1,83 +1,94 @@
-from bson import ObjectId
+"""Task CRUD plus the two AI-assisted creation flows (natural language, voice)."""
+from __future__ import annotations
+
 from datetime import datetime, timezone
-from app.utils.assemblyai_utils import upload_audio, transcribe_audio
-from app.utils.llm_utils import generate_task_fields_from_llm
+from typing import Any
 
-def create_task(db, data, user_id):
-    task = {
+from bson import ObjectId
+
+from ..core.exceptions import ValidationError
+from ..repositories.task_repository import TaskRepository
+from ..utils.assemblyai_utils import transcribe_audio, upload_audio
+from ..utils.llm_utils import generate_task_fields_from_llm
+
+# Whitelist for partial updates — clients cannot rewrite ids/ownership/timestamps.
+_UPDATABLE_FIELDS = ("title", "description", "category", "dueDate", "isCompleted")
+
+
+def _build_document(
+    user_id: str, fields: dict[str, Any], created_from: str
+) -> dict[str, Any]:
+    """Shape a new task exactly as the legacy inline literals did."""
+    return {
         "taskId": str(ObjectId()),
         "userId": user_id,
-        "title": data["title"],
-        "description": data.get("description", ""),
-        "category": data.get("category", ""),
-        "dueDate": data.get("dueDate", ""),
+        "title": fields.get("title", ""),
+        "description": fields.get("description", ""),
+        "category": fields.get("category", ""),
+        "dueDate": fields.get("dueDate", ""),
         "isCompleted": False,
-        "createdFrom": data.get("createdFrom", "manual"),
-        "createdAt": datetime.now(timezone.utc).isoformat(),
-        "hasSubtasks": False,
-    }
-    db.tasks.insert_one(task)
-    return task
-
-def create_nlp_task(db, user_id, prompt): 
-    task_fields = generate_task_fields_from_llm(prompt)
-    print(task_fields)
-    task = {
-        "taskId": str(ObjectId()),
-        "userId": user_id,
-        "title": task_fields.get("title", ""),
-        "description": task_fields.get("description", ""),
-        "category": task_fields.get("category", ""),
-        "dueDate": task_fields.get("dueDate", ""),
-        "isCompleted": False,
-        "createdFrom": "natural-language",
+        "createdFrom": created_from,
         "createdAt": datetime.now(timezone.utc).isoformat(),
         "hasSubtasks": False,
     }
 
-    db.tasks.insert_one(task)
-    return task
 
-def create_voice_task(db, user_id, file_stream):
-    audio_url = upload_audio(file_stream)
-    transcript = transcribe_audio(audio_url)
-    task_fields = generate_task_fields_from_llm(transcript)
-    print(task_fields)
-    task = {
-        "taskId": str(ObjectId()),
-        "userId": user_id,
-        "title": task_fields.get("title", ""),
-        "description": task_fields.get("description", ""),
-        "category": task_fields.get("category", ""),
-        "dueDate": task_fields.get("dueDate", ""),
-        "isCompleted": False,
-        "createdFrom": "voice",
-        "createdAt": datetime.now(timezone.utc).isoformat(),
-        "hasSubtasks": False,
-    }
+class TaskService:
+    def __init__(self, tasks: TaskRepository) -> None:
+        self._tasks = tasks
 
-    db.tasks.insert_one(task)
-    return task
+    def create(self, data: dict[str, Any], user_id: str) -> dict[str, Any]:
+        """Create a manual task (route already validated ``title`` presence)."""
+        document = {
+            "taskId": str(ObjectId()),
+            "userId": user_id,
+            "title": data["title"],
+            "description": data.get("description", ""),
+            "category": data.get("category", ""),
+            "dueDate": data.get("dueDate", ""),
+            "isCompleted": False,
+            "createdFrom": data.get("createdFrom", "manual"),
+            "createdAt": datetime.now(timezone.utc).isoformat(),
+            "hasSubtasks": False,
+        }
+        return self._tasks.insert_task(document)
 
-def get_tasks(db, user_id):
-    return list(db.tasks.find({"userId": user_id}))
+    def create_from_natural_language(self, user_id: str, prompt: str) -> dict[str, Any]:
+        """Parse a free-text prompt through the LLM into a task.
 
-def get_task(db, task_id, user_id):
-    return db.tasks.find_one({"taskId": task_id, "userId": user_id})
+        LLM failures surface as 400s because the legacy route caught
+        ``ValueError`` and returned 400 — the prompt is the bad input there.
+        """
+        try:
+            fields = generate_task_fields_from_llm(prompt)
+        except ValueError as exc:
+            raise ValidationError(str(exc)) from exc
+        return self._tasks.insert_task(
+            _build_document(user_id, fields, "natural-language")
+        )
 
-def update_task(db, task_id, user_id, data):
-    print(task_id,user_id,"----")
-    update_data = {k: v for k, v in data.items() if k in ["title", "description", "category", "dueDate", "isCompleted"]}
-    task = db.tasks.find_one({"taskId": task_id, "userId": user_id})
-    print(task)  # Should show the document if it exists
-    result = db.tasks.update_one(
-        {"taskId": task_id, "userId": user_id},
-        {"$set": update_data}
-    )
-    print(result)
+    def create_from_voice(self, user_id: str, file_stream: Any) -> dict[str, Any]:
+        """Upload audio → transcribe → LLM fields → task.
 
-    return result.modified_count > 0
+        Failures here bubble up as 500s, matching the legacy route which only
+        caught ``Exception`` and returned 500 for every voice-flow error.
+        """
+        audio_url = upload_audio(file_stream)
+        transcript = transcribe_audio(audio_url)
+        fields = generate_task_fields_from_llm(transcript)
+        return self._tasks.insert_task(_build_document(user_id, fields, "voice"))
 
-def delete_task(db, task_id, user_id):
-    result = db.tasks.delete_one({"taskId": task_id, "userId": user_id})
-    return result.deleted_count > 0
+    def list(self, user_id: str) -> list[dict[str, Any]]:
+        return self._tasks.find_all(user_id)
+
+    def get(self, task_id: str, user_id: str) -> dict[str, Any] | None:
+        return self._tasks.find_for_user(task_id, user_id)
+
+    def update(self, task_id: str, user_id: str, data: dict[str, Any]) -> bool:
+        """Partial update; False means "not found" *or* "no fields actually changed"."""
+        fields = {k: v for k, v in data.items() if k in _UPDATABLE_FIELDS}
+        return self._tasks.update_fields(task_id, user_id, fields) > 0
+
+    def delete(self, task_id: str, user_id: str) -> bool:
+        """Delete a task. Subtasks are *not* cascade-deleted (legacy contract)."""
+        return self._tasks.delete(task_id, user_id) > 0
