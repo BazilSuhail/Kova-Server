@@ -42,11 +42,12 @@ def create_app(
             unreachable — the same startup contract as the legacy factory.
 
     Returns:
-        A fully configured app with all 29 endpoints registered.
+        A fully configured app with all 31 endpoints registered.
     """
     if settings is None:
         settings = Settings.from_env()
     configure_logging(settings.log_level)
+    _reject_insecure_config(settings)
 
     app = Flask(__name__)
 
@@ -56,17 +57,14 @@ def create_app(
     app.config["GROQ_API_KEY"] = settings.groq_api_key
     app.config["GROQ_LLM_URL"] = settings.groq_llm_url
     app.config["ASSEMBLYAI_API_KEY"] = settings.assemblyai_api_key
+    # Reject oversized uploads (voice/PDF) before they are buffered into memory.
+    app.config["MAX_CONTENT_LENGTH"] = settings.max_upload_mb * 1024 * 1024
 
     init_jwt(app, settings)
-    init_cors(app)
+    init_cors(app, settings)
     _register_request_context(app)
+    _register_security_headers(app)
     _register_error_handlers(app)
-
-    if settings.env == "production" and settings.uses_default_jwt_secret:
-        logger.warning(
-            "jwt_secret_insecure_default",
-            extra={"hint": "set ZENFLOW_JWT_SECRET in the environment"},
-        )
 
     client = mongo_client if mongo_client is not None else connect_mongo(settings.mongo_uri)
     db = init_db(app, client)
@@ -78,6 +76,41 @@ def create_app(
         extra={"env": settings.env, "blueprints": len(app.blueprints)},
     )
     return app
+
+
+def _reject_insecure_config(settings: Settings) -> None:
+    """Refuse to boot in production with the built-in JWT secret.
+
+    A warning buried in a log stream is easy to miss; a crash at boot is not.
+    ``ZENFLOW_ALLOW_INSECURE_JWT=1`` bypasses the check (development only).
+    """
+    if not settings.uses_default_jwt_secret:
+        return
+    if settings.env == "production" and not settings.allow_insecure_jwt:
+        raise RuntimeError(
+            "Refusing to start in production with the built-in JWT secret. "
+            "Set ZENFLOW_JWT_SECRET to a random string of at least 32 characters "
+            "(or ZENFLOW_ALLOW_INSECURE_JWT=1 to bypass — development only)."
+        )
+    logger.warning(
+        "jwt_secret_insecure_default",
+        extra={"env": settings.env, "hint": "set ZENFLOW_JWT_SECRET"},
+    )
+
+
+def _register_security_headers(app: Flask) -> None:
+    """Minimal hardening headers on every response.
+
+    JSON API only — no CSP (no HTML to protect) and no HSTS/HTTPS redirect
+    (would break local development; handled at the proxy in production).
+    """
+
+    @app.after_request
+    def _add_security_headers(response: Response) -> Response:
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "no-referrer")
+        return response
 
 
 def _register_request_context(app: Flask) -> None:
@@ -126,6 +159,10 @@ def _register_error_handlers(app: Flask) -> None:
     @app.errorhandler(Exception)
     def _handle_unexpected(error: Exception) -> Response:
         if isinstance(error, HTTPException):
+            if error.code == 413:
+                # Oversized upload (MAX_CONTENT_LENGTH) → JSON, like the rest
+                # of the API, instead of Flask's default HTML error page.
+                return api_response({"message": "Request payload too large"}, 413)
             # Unmatched URLs/methods keep Flask's default (HTML) responses so
             # the public 404/405 contract does not change.
             return error.get_response()

@@ -17,6 +17,8 @@ DEFAULT_JWT_SECRET = "kasnkdjnaskjdfnskdjf6454sdf"
 DEFAULT_MONGO_URI = "mongodb://localhost:27017/zenflow"
 DEFAULT_GROQ_LLM_URL = "https://api.groq.com/openai/v1/chat/completions"
 
+_TRUE_VALUES = frozenset({"1", "true", "yes", "on"})
+
 
 def _env(name: str, *legacy_names: str, default: str | None = None) -> str | None:
     """Read ``name`` first, then legacy aliases, else ``default``.
@@ -32,6 +34,14 @@ def _env(name: str, *legacy_names: str, default: str | None = None) -> str | Non
     return default
 
 
+def _parse_origins(raw: str | None) -> tuple[str, ...]:
+    """Split a comma-separated CORS allowlist; unset/empty falls back to ``*``."""
+    if not raw:
+        return ("*",)
+    origins = tuple(part.strip() for part in raw.split(",") if part.strip())
+    return origins or ("*",)
+
+
 @dataclass(frozen=True)
 class Settings:
     """Immutable runtime configuration; build via :meth:`from_env`."""
@@ -44,6 +54,10 @@ class Settings:
     assemblyai_api_key: str | None
     groq_api_key: str | None
     groq_llm_url: str
+    # --- Sprint A hardening knobs (all optional, sensible defaults) ---
+    cors_origins: tuple[str, ...] = ("*",)
+    max_upload_mb: int = 16
+    allow_insecure_jwt: bool = False
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -63,6 +77,12 @@ class Settings:
             groq_api_key=_env("ZENFLOW_GROQ_API_KEY", "GROQ_API_KEY"),
             groq_llm_url=_env("ZENFLOW_GROQ_LLM_URL", "GROQ_LLM_URL", default=DEFAULT_GROQ_LLM_URL)
             or DEFAULT_GROQ_LLM_URL,
+            cors_origins=_parse_origins(_env("ZENFLOW_CORS_ORIGINS")),
+            max_upload_mb=int(_env("ZENFLOW_MAX_UPLOAD_MB", default="16") or "16"),
+            allow_insecure_jwt=(
+                (_env("ZENFLOW_ALLOW_INSECURE_JWT", default="") or "").strip().lower()
+                in _TRUE_VALUES
+            ),
         )
 
     @classmethod

@@ -129,4 +129,6 @@ curl http://127.0.0.1:5000/api/tasks/ -H "Authorization: Bearer <access_token>"
 
 **Responses:** `200 { "message": "Task deleted" }` · `404 { "message": "Task not found" }` · `500`
 
-**⚠️ Note:** subtasks of the deleted task are **not** cascade-deleted.
+**✅ Note:** deleting a task also **cascade-deletes its subtasks** (Sprint A — the
+legacy implementation left orphaned subtask documents behind). Nothing happens when
+the task does not exist or isn't yours.

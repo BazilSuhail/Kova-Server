@@ -2,7 +2,7 @@
 
 A Flask REST API for task management (tasks, subtasks, planner, summaries, notifications) with MongoDB and JWT authentication.
 
-- **API reference:** [`docs/README.md`](docs/README.md) — **29 endpoints** across 8 sections
+- **API reference:** [`docs/README.md`](docs/README.md) — **31 endpoints** across 9 sections
 - **Open work:** [`docs/TODO.md`](docs/TODO.md)
 
 ***
@@ -79,21 +79,19 @@ zenflow-server/
 │   │   ├── base.py               # shared insert/find/update/delete helpers
 │   │   └── *_repository.py       # one per collection
 │   │
-│   ├── models/                   # ⚠️ legacy schema stubs (unused, see docs/TODO.md)
-│   ├── middleware/               # ⚠️ legacy auth helper (unused, see docs/TODO.md)
-│   └── utils/                    # external integrations (Groq, AssemblyAI, PDF)
+│   ├── utils/                    # external integrations (Groq, AssemblyAI, PDF)
 │
 └── tests/
     ├── conftest.py               # app/client/auth fixtures (in-memory DB)
     ├── support/fake_mongo.py     # dependency-free PyMongo stand-in
-    └── test_*.py                 # 45 endpoint tests
+    └── test_*.py                 # 54 endpoint/security tests
 ```
 
 ***
 
 ## 📚 API Endpoints
 
-Base URL: `http://127.0.0.1:5000` · all routes under `/api` · JWT required except auth.
+Base URL: `http://127.0.0.1:5000` · all routes under `/api` · JWT required except auth + health.
 Full request/response schemas: **[`docs/README.md`](docs/README.md)**
 
 | Section | Endpoints |
@@ -106,7 +104,8 @@ Full request/response schemas: **[`docs/README.md`](docs/README.md)**
 | **Planner** (5) | `POST/GET /api/planner/` · `PUT /api/planner/<planner_id>/focus` · `PUT /api/planner/<planner_id>/tasks` · `DELETE /api/planner/<planner_id>` |
 | **Summaries** (4) | `POST /api/summaries/create` · `GET /api/summaries/` · `PUT/DELETE /api/summaries/<summary_id>` |
 | **Daily Recap** (1) | `GET /api/daily-recap/` |
-| **Total** | **29** |
+| **Health** (2) | `GET /api/health` · `GET /api/health/ready` (public) |
+| **Total** | **31** |
 
 ***
 
@@ -126,3 +125,7 @@ Tests run against an in-memory Mongo stand-in — no database or network needed.
 - MongoDB must be reachable at boot (5s fail-fast timeout); indexes are created automatically.
 - Logs are structured JSON with `X-Request-ID` correlation ids (echoed in responses).
 - Secrets come from the environment (`.env` locally) — see `.env.example`.
+- **Production boot fails fast** if `ZENFLOW_JWT_SECRET` is unset (built-in secret);
+  every response carries `X-Content-Type-Options`/`X-Frame-Options`/`Referrer-Policy`.
+  CORS allowlist (`ZENFLOW_CORS_ORIGINS`, default `*`) and the 16 MB upload cap
+  (`ZENFLOW_MAX_UPLOAD_MB`) are configurable.

@@ -53,7 +53,7 @@ def build_services(db: Database) -> Services:
     return Services(
         auth=AuthService(users),
         users=UserService(users),
-        tasks=TaskService(tasks),
+        tasks=TaskService(tasks, SubtaskRepository(db)),
         subtasks=SubtaskService(SubtaskRepository(db), tasks),
         notifications=NotificationService(NotificationRepository(db)),
         planner=PlannerService(PlannerRepository(db), tasks),

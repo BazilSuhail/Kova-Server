@@ -16,6 +16,10 @@ def init_jwt(app: Flask, settings: Settings) -> None:
     JWTManager(app)
 
 
-def init_cors(app: Flask) -> None:
-    """Enable CORS for all routes/origins exactly like the legacy ``CORS(app)``."""
-    CORS(app)
+def init_cors(app: Flask, settings: Settings) -> None:
+    """Apply the configured origin allowlist (``ZENFLOW_CORS_ORIGINS``).
+
+    Default is ``("*",)`` — identical to the legacy ``CORS(app)`` — so no
+    deployment breaks until an allowlist is deliberately configured.
+    """
+    CORS(app, origins=list(settings.cors_origins))

@@ -103,3 +103,22 @@ def test_create_voice_task_returns_400_when_file_missing(client, auth):
 def test_unmatched_url_still_returns_404(client):
     # Unknown routes keep Flask's default behaviour after the error-handler pass.
     assert client.get("/api/definitely-not-a-route").status_code == 404
+
+
+def test_delete_task_cascades_to_its_subtasks(client, app, auth, monkeypatch):
+    monkeypatch.setattr(
+        "app.services.subtask_service.generate_subtasks_from_description",
+        lambda _description: ["Step one", "Step two", "Step three"],
+    )
+    headers = auth()
+    task = _create_task(client, headers)
+    created = client.post(
+        "/api/subtasks/create", headers=headers, json={"taskId": task["taskId"]}
+    )
+    assert created.status_code == 201
+    assert len(list(app.db["subtasks"].find({}))) == 1
+
+    deleted = client.delete(f"/api/tasks/{task['taskId']}", headers=headers)
+    assert deleted.status_code == 200
+    # No orphaned subtask documents may survive the task.
+    assert list(app.db["subtasks"].find({})) == []

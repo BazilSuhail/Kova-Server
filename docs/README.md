@@ -24,12 +24,13 @@ Stack: **Flask + Flask-JWT-Extended + MongoDB (PyMongo) + Waitress**, served via
 | 6 | [Planner](sections/06-planner.md) | `planner_bp` | `/api/planner` | 5 | `app/api/planner.py` |
 | 7 | [Summaries](sections/07-summaries.md) | `summaries_bp` | `/api/summaries` | 4 | `app/api/summaries.py` |
 | 8 | [Daily Recap](sections/08-daily-recap.md) | `daily_recap_bp` | `/api/daily-recap` | 1 | `app/api/daily_recap.py` |
-| | **TOTAL** | | | **29** | |
+| 9 | [Health](sections/09-health.md) | `health_bp` | `/api` | 2 | `app/api/health.py` |
+| | **TOTAL** | | | **31** | |
 
-**By method:** POST 9 · GET 8 · PUT 8 · DELETE 4 → **29 active endpoints**
+**By method:** POST 9 · GET 10 · PUT 8 · DELETE 4 → **31 active endpoints**
 (commented-out legacy routes in `planner.py` are not counted)
 
-**By auth:** 2 public (signup/login) · 27 require JWT
+**By auth:** 4 public (signup/login/health) · 27 require JWT
 
 ---
 
@@ -45,6 +46,7 @@ Stack: **Flask + Flask-JWT-Extended + MongoDB (PyMongo) + Waitress**, served via
 | Planner | [sections/06-planner.md](sections/06-planner.md) | 5 |
 | Summaries | [sections/07-summaries.md](sections/07-summaries.md) | 4 |
 | Daily Recap | [sections/08-daily-recap.md](sections/08-daily-recap.md) | 1 |
+| Health | [sections/09-health.md](sections/09-health.md) | 2 |
 
 ➡️ Open work items: **[TODO.md](TODO.md)**
 

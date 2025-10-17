@@ -7,6 +7,7 @@ from typing import Any
 from bson import ObjectId
 
 from ..core.exceptions import ValidationError
+from ..repositories.subtask_repository import SubtaskRepository
 from ..repositories.task_repository import TaskRepository
 from ..utils.assemblyai_utils import transcribe_audio, upload_audio
 from ..utils.llm_utils import generate_task_fields_from_llm
@@ -34,8 +35,9 @@ def _build_document(
 
 
 class TaskService:
-    def __init__(self, tasks: TaskRepository) -> None:
+    def __init__(self, tasks: TaskRepository, subtasks: SubtaskRepository) -> None:
         self._tasks = tasks
+        self._subtasks = subtasks
 
     def create(self, data: dict[str, Any], user_id: str) -> dict[str, Any]:
         """Create a manual task (route already validated ``title`` presence)."""
@@ -90,5 +92,13 @@ class TaskService:
         return self._tasks.update_fields(task_id, user_id, fields) > 0
 
     def delete(self, task_id: str, user_id: str) -> bool:
-        """Delete a task. Subtasks are *not* cascade-deleted (legacy contract)."""
-        return self._tasks.delete(task_id, user_id) > 0
+        """Delete a task **and** its subtasks.
+
+        The cascade was added in Sprint A — the legacy implementation left
+        orphaned subtask documents behind. Only tasks owned by the caller are
+        affected, and nothing happens when the task does not exist.
+        """
+        if self._tasks.delete(task_id, user_id) == 0:
+            return False
+        self._subtasks.delete_by_task(task_id)
+        return True

@@ -11,6 +11,10 @@ from ..core.exceptions import AuthenticationError, ValidationError
 from ..repositories.user_repository import UserRepository
 
 
+# Pinned explicitly so a bcrypt library default change can't silently weaken hashes.
+PASSWORD_HASH_ROUNDS = 12
+
+
 class AuthService:
     """Owns signup/authentication rules; issues nothing — routes mint JWTs."""
 
@@ -31,7 +35,8 @@ class AuthService:
             "name": data["name"],
             "email": email,
             "password": bcrypt.hashpw(
-                data["password"].encode("utf-8"), bcrypt.gensalt()
+                data["password"].encode("utf-8"),
+                bcrypt.gensalt(rounds=PASSWORD_HASH_ROUNDS),
             ).decode("utf-8"),
             "profilePicture": data.get("profilePicture", ""),
             "preferences": data.get(

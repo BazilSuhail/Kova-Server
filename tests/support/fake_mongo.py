@@ -145,6 +145,10 @@ class FakeDatabase:
             raise AttributeError(name)
         return self[name]
 
+    def command(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+        """Stand-in for pymongo's ``Database.command`` (readiness ping)."""
+        return {"ok": 1}
+
 
 class FakeMongoClient:
     """Drop-in replacement for ``pymongo.MongoClient`` in ``create_app``."""
