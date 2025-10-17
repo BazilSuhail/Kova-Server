@@ -5,7 +5,7 @@ Work list generated from the API analysis of `app/` + `run.py`.
 ## ✅ Done
 
 - [x] Analyze all blueprints registered in `app/api/__init__.py`
-- [x] Document all **31 active endpoints** across 9 sections
+- [x] Document all **41 active endpoints** across 10 sections
 - [x] Add API count index → [docs/README.md](README.md)
 - [x] Document auth scheme (JWT, 1h expiry) and response envelope
 - [x] Document request/response bodies for every endpoint
@@ -22,6 +22,23 @@ Work list generated from the API analysis of `app/` + `run.py`.
 - [x] Deleting a task now cascade-deletes its subtasks (no more orphans)
 - [x] bcrypt cost pinned to `rounds=12` explicitly
 - [x] Test suite: **54 passing** (`python -m pytest`)
+
+## 🚀 Sprint B — API Completeness (done)
+
+- [x] `POST /api/auth/refresh` — 7-day refresh tokens with **rotation** (old token revoked on use)
+- [x] `POST /api/auth/logout` — blocklists access + optional refresh token (`token_blocklist`
+      collection, TTL index, checked on every protected request → instant revocation)
+- [x] `GET /api/auth/me` and `PUT /api/auth/password` (verify current, min 8 chars)
+- [x] `refresh_token` now returned by signup/login (additive — existing clients unaffected)
+- [x] Pagination (`page`/`limit`, max 100) + filters for `GET /api/tasks/`
+      (`completed`, `category`, `q`), `GET /api/notifications/` (`unread`),
+      `GET /api/summaries/` — bare array kept when no page params are sent
+- [x] `GET`/`DELETE /api/notifications/<id>`
+- [x] Single-subtask `DELETE /api/subtasks/<id>` (resets parent `hasSubtasks` when last)
+- [x] `PUT /api/planner/<id>` full update (whitelisted fields, was commented-out only)
+- [x] `POST /api/summaries/<id>/convert-to-tasks` — persists the task suggestion
+- [x] `GET /api/weekly-recap/` — rolling 7-day recap (`?end=YYYY-MM-DD`)
+- [x] Test suite: **87 passing**; endpoint count **41** (29 legacy + health + 10 new)
 
 ## 📝 Documentation TODOs
 
@@ -51,19 +68,23 @@ Fixed in the production refactor:
 
 Still open:
 
-- [ ] **`summaries` create returns a `task` that is never inserted** into `db.tasks`
-      (legacy behavior — kept as-is to avoid silent data-model changes).
+- [ ] **`summaries` create still returns an unpersisted `task` suggestion** (legacy
+      response kept as-is) — clients can persist it via the new
+      `POST /api/summaries/<id>/convert-to-tasks`.
 - [ ] Subtask **LLM parse failures return 404** (legacy mapped every `ValueError` to 404);
       should become 400/502 — needs a client-aware decision.
 
 ## 🔮 Feature/API TODOs
 
-- [ ] Add `GET /api/notifications/<id>` (single) + `DELETE /api/notifications/<id>`
-- [ ] Add `POST /api/subtasks/<subtask_id>`-style single-subtask delete (currently only bulk per task)
-- [ ] Add pagination for `GET /api/tasks/`, `GET /api/summaries/`, `GET /api/notifications/`
-- [ ] Add `POST /api/auth/refresh` (refresh token) and `POST /api/auth/logout` (token blacklist)
-- [ ] Add `PUT /api/planner/<planner_id>` (full update — route exists only commented out)
+- [x] Add `GET /api/notifications/<id>` (single) + `DELETE /api/notifications/<id>`
+- [x] Add single-subtask delete (`DELETE /api/subtasks/<subtask_id>`)
+- [x] Add pagination for `GET /api/tasks/`, `GET /api/summaries/`, `GET /api/notifications/`
+      (+ task filters `completed`/`category`/`q` and notification `unread`)
+- [x] Add `POST /api/auth/refresh` (rotating refresh token) and `POST /api/auth/logout` (blocklist)
+- [x] Add `PUT /api/planner/<planner_id>` (full update — route existed only commented out)
+- [x] Add `POST /api/summaries/<summary_id>/convert-to-tasks` (persist task suggestion)
+- [x] Add `GET /api/weekly-recap/` (rolling 7-day recap)
 - [x] Add health-check endpoint `GET /api/health` for Railway/Waitress probes
       (+ `GET /api/health/ready` with Mongo ping → 503)
-- [ ] Rate limiting + request validation layer (e.g. `flask-smorest` / `marshmallow`)
-- [x] Tests for all active endpoints under `tests/` — **54 passing**
+- [ ] Rate limiting + request validation layer (e.g. `flask-smorest` / `marshmallow`) — *Sprint C*
+- [x] Tests for all active endpoints under `tests/` — **87 passing**

@@ -15,6 +15,12 @@ class PlannerRepository(BaseRepository):
     def find_for_user(self, user_id: str) -> list[dict[str, Any]]:
         return self.find_many({"userId": user_id})
 
+    def find_by_id_for_user(
+        self, planner_id: str, user_id: str
+    ) -> dict[str, Any] | None:
+        """Ownership-checked lookup used before full updates."""
+        return self.find_one({"plannerId": planner_id, "userId": user_id})
+
     def find_by_date(self, user_id: str, date_prefix: str) -> dict[str, Any] | None:
         """Locate a day's planner; ``date`` may be ``YYYY-MM-DD`` or full ISO."""
         return self.find_one(

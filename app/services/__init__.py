@@ -17,6 +17,7 @@ from ..repositories import (
     SubtaskRepository,
     SummaryRepository,
     TaskRepository,
+    TokenBlocklistRepository,
     UserRepository,
 )
 from .auth_service import AuthService
@@ -27,6 +28,7 @@ from .subtask_service import SubtaskService
 from .summary_service import SummaryService
 from .task_service import TaskService
 from .user_service import UserService
+from .weekly_recap_service import WeeklyRecapService
 
 # Key under which the container lives in ``app.extensions``.
 EXTENSION_KEY = "zenflow.services"
@@ -44,6 +46,7 @@ class Services:
     planner: PlannerService
     summaries: SummaryService
     daily_recap: DailyRecapService
+    weekly_recap: WeeklyRecapService
 
 
 def build_services(db: Database) -> Services:
@@ -51,14 +54,15 @@ def build_services(db: Database) -> Services:
     users = UserRepository(db)
     tasks = TaskRepository(db)
     return Services(
-        auth=AuthService(users),
+        auth=AuthService(users, TokenBlocklistRepository(db)),
         users=UserService(users),
         tasks=TaskService(tasks, SubtaskRepository(db)),
         subtasks=SubtaskService(SubtaskRepository(db), tasks),
         notifications=NotificationService(NotificationRepository(db)),
         planner=PlannerService(PlannerRepository(db), tasks),
-        summaries=SummaryService(SummaryRepository(db)),
+        summaries=SummaryService(SummaryRepository(db), tasks),
         daily_recap=DailyRecapService(tasks, PlannerRepository(db)),
+        weekly_recap=WeeklyRecapService(tasks, PlannerRepository(db)),
     )
 
 

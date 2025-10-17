@@ -46,6 +46,28 @@ class BaseRepository:
             cursor = cursor.sort(*sort)
         return list(cursor)
 
+    def count(self, query: dict[str, Any]) -> int:
+        """Matching-document count (drives pagination metadata)."""
+        return self._collection.count_documents(query)
+
+    def find_page(
+        self,
+        query: dict[str, Any],
+        *,
+        sort: tuple[str, int] | None = None,
+        skip: int = 0,
+        limit: int = 0,
+    ) -> list[dict[str, Any]]:
+        """One page of ``query`` — slicing happens in Mongo, not in Python."""
+        cursor = self._collection.find(query)
+        if sort is not None:
+            cursor = cursor.sort(*sort)
+        if skip:
+            cursor = cursor.skip(skip)
+        if limit:
+            cursor = cursor.limit(limit)
+        return list(cursor)
+
     def update(self, query: dict[str, Any], fields: dict[str, Any]) -> UpdateResult:
         """Apply a ``$set``; ``modified_count`` distinguishes "matched" from "changed"."""
         return self._collection.update_one(query, {"$set": fields})

@@ -50,4 +50,7 @@ def create_indexes(db: Database) -> None:
     db.planner.create_index([("date", 1)])
     db.summaries.create_index([("summaryId", 1)], unique=True)
     db.summaries.create_index([("userId", 1)])
+    # Logout revocation: unique jti for O(1) checks, TTL to self-purge dead rows.
+    db.token_blocklist.create_index([("jti", 1)], unique=True)
+    db.token_blocklist.create_index([("expiresAt", 1)], expireAfterSeconds=0)
     logger.info("mongodb indexes ensured")

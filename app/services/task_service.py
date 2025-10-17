@@ -1,12 +1,14 @@
 """Task CRUD plus the two AI-assisted creation flows (natural language, voice)."""
 from __future__ import annotations
 
+import re
 from datetime import datetime, timezone
 from typing import Any
 
 from bson import ObjectId
 
 from ..core.exceptions import ValidationError
+from ..core.query import PageParams, page_payload
 from ..repositories.subtask_repository import SubtaskRepository
 from ..repositories.task_repository import TaskRepository
 from ..utils.assemblyai_utils import transcribe_audio, upload_audio
@@ -80,8 +82,32 @@ class TaskService:
         fields = generate_task_fields_from_llm(transcript)
         return self._tasks.insert_task(_build_document(user_id, fields, "voice"))
 
-    def list(self, user_id: str) -> list[dict[str, Any]]:
-        return self._tasks.find_all(user_id)
+    def list(
+        self,
+        user_id: str,
+        *,
+        completed: bool | None = None,
+        category: str | None = None,
+        query: str | None = None,
+        page: PageParams | None = None,
+    ) -> list[dict[str, Any]] | dict[str, Any]:
+        """List tasks, optionally filtered and/or paginated.
+
+        No ``page`` → the legacy bare-array response (unfiltered: identical
+        query to the original ``find_all``). With ``page`` → the paged envelope.
+        """
+        filters: dict[str, Any] = {"userId": user_id}
+        if completed is not None:
+            filters["isCompleted"] = completed
+        if category:
+            filters["category"] = category
+        if query:
+            filters["title"] = {"$regex": re.escape(query), "$options": "i"}
+        if page is None:
+            return self._tasks.find_many(filters)
+        total = self._tasks.count(filters)
+        items = self._tasks.find_page(filters, skip=page.skip, limit=page.limit)
+        return page_payload(items, total, page)
 
     def get(self, task_id: str, user_id: str) -> dict[str, Any] | None:
         return self._tasks.find_for_user(task_id, user_id)

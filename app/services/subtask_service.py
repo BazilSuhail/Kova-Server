@@ -80,3 +80,20 @@ class SubtaskService:
         deleted = self._subtasks.delete_by_task(task_id)
         self._tasks.set_has_subtasks(task_id, False)
         return deleted
+
+    def delete_one(self, subtask_id: str, user_id: str) -> bool:
+        """Delete a single subtask; ownership is proven through the parent task.
+
+        When the last subtask of a task goes away, the parent's
+        ``hasSubtasks`` flag is reset to ``False``.
+        """
+        subtask = self._subtasks.find_by_subtask_id(subtask_id)
+        if subtask is None:
+            return False
+        if self._tasks.find_for_user(subtask["taskId"], user_id) is None:
+            return False
+        if self._subtasks.delete_by_subtask_id(subtask_id) == 0:
+            return False
+        if not self._subtasks.find_by_task(subtask["taskId"]):
+            self._tasks.set_has_subtasks(subtask["taskId"], False)
+        return True

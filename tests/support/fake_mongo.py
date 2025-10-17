@@ -41,8 +41,15 @@ def _matches(document: dict[str, Any], query: dict[str, Any]) -> bool:
                     if actual == operand:
                         return False
                 elif operator == "$regex":
-                    if not isinstance(actual, str) or not re.search(operand, actual):
+                    flags = 0
+                    if "i" in str(expected.get("$options", "")):
+                        flags = re.IGNORECASE
+                    if not isinstance(actual, str) or not re.search(
+                        operand, actual, flags
+                    ):
                         return False
+                elif operator == "$options":
+                    continue  # consumed together with $regex above
                 else:
                     raise NotImplementedError(f"fake mongo: unsupported operator {operator}")
         elif actual != expected:
@@ -61,7 +68,7 @@ def _project(document: dict[str, Any], projection: dict[str, int] | None) -> dic
 
 
 class FakeCursor:
-    """Lazy-ish cursor supporting the single ``.sort()`` the app uses."""
+    """Lazy-ish cursor supporting the ``.sort()/.skip()/.limit()`` the app uses."""
 
     def __init__(self, documents: list[dict[str, Any]]) -> None:
         self._documents = documents
@@ -70,6 +77,14 @@ class FakeCursor:
         self._documents.sort(
             key=lambda doc: doc.get(key) or "", reverse=direction == -1
         )
+        return self
+
+    def skip(self, count: int) -> "FakeCursor":
+        self._documents = self._documents[count:]
+        return self
+
+    def limit(self, count: int) -> "FakeCursor":
+        self._documents = self._documents[:count]
         return self
 
     def __iter__(self):
@@ -106,6 +121,9 @@ class FakeCollection:
                 if _matches(document, query)
             ]
         )
+
+    def count_documents(self, query: dict[str, Any]) -> int:
+        return sum(1 for document in self._documents if _matches(document, query))
 
     def update_one(self, query: dict[str, Any], update: dict[str, Any]) -> UpdateResult:
         if set(update) != {"$set"}:

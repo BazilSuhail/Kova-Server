@@ -5,8 +5,12 @@ from typing import Any
 
 from bson import ObjectId
 
+from ..core.exceptions import ValidationError
 from ..repositories.planner_repository import PlannerRepository
 from ..repositories.task_repository import TaskRepository
+
+# Fields a client may change through PUT /api/planner/<id> (id/owner immutable).
+_UPDATABLE_FIELDS = ("date", "focusTasks", "tasks", "reflection")
 
 
 class PlannerService:
@@ -47,6 +51,26 @@ class PlannerService:
         return (
             self._planners.update_fields(planner_id, user_id, {"tasks": task_ids}) > 0
         )
+
+    def update(
+        self, planner_id: str, user_id: str, data: dict[str, Any]
+    ) -> bool:
+        """Apply whitelisted changes; False = no such planner (owner-scoped).
+
+        Unlike the legacy partial-update routes, an *existing* planner that
+        receives identical values still counts as updated — only a missing
+        document yields 404.
+        """
+        fields = {k: v for k, v in data.items() if k in _UPDATABLE_FIELDS}
+        if not fields:
+            raise ValidationError(
+                "No updatable fields; expected one of: "
+                + ", ".join(_UPDATABLE_FIELDS)
+            )
+        if self._planners.find_by_id_for_user(planner_id, user_id) is None:
+            return False
+        self._planners.update_fields(planner_id, user_id, fields)
+        return True
 
     def delete(self, planner_id: str, user_id: str) -> bool:
         return self._planners.delete(planner_id, user_id) > 0

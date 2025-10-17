@@ -15,6 +15,7 @@ from .subtasks import subtasks_bp
 from .summaries import summaries_bp
 from .tasks import tasks_bp
 from .users import users_bp
+from .weekly_recap import weekly_recap_bp
 
 
 def register_blueprints(app: Flask) -> None:
@@ -27,5 +28,6 @@ def register_blueprints(app: Flask) -> None:
     app.register_blueprint(planner_bp, url_prefix="/api/planner")
     app.register_blueprint(summaries_bp, url_prefix="/api/summaries")
     app.register_blueprint(daily_recap_bp, url_prefix="/api/daily-recap")
+    app.register_blueprint(weekly_recap_bp, url_prefix="/api/weekly-recap")
     # Health probes live directly under /api (public, no version prefix).
     app.register_blueprint(health_bp, url_prefix="/api")

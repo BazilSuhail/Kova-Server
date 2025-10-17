@@ -58,6 +58,8 @@ class Settings:
     cors_origins: tuple[str, ...] = ("*",)
     max_upload_mb: int = 16
     allow_insecure_jwt: bool = False
+    # --- Sprint B: refresh-token lifetime (7 days) ---
+    jwt_refresh_expires_seconds: int = 604800
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -82,6 +84,10 @@ class Settings:
             allow_insecure_jwt=(
                 (_env("ZENFLOW_ALLOW_INSECURE_JWT", default="") or "").strip().lower()
                 in _TRUE_VALUES
+            ),
+            jwt_refresh_expires_seconds=int(
+                _env("ZENFLOW_JWT_REFRESH_EXPIRES_SECONDS", default="604800")
+                or "604800"
             ),
         )
 

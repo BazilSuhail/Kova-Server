@@ -1,6 +1,6 @@
 # 7. Summaries API — `/api/summaries`
 
-> File: `app/api/summaries.py` · Blueprint: `summaries_bp` · **4 endpoints** · **All JWT-protected**
+> File: `app/api/summaries.py` · Blueprint: `summaries_bp` · **5 endpoints** · **All JWT-protected**
 
 Upload a **PDF** → text extraction → LLM → bullet summary (plus a derived task object).
 
@@ -54,7 +54,8 @@ curl -X POST http://127.0.0.1:5000/api/summaries/create \
 }
 ```
 
-> ⚠️ The returned `task` is **not persisted** to `db.tasks` — see [TODO.md](../TODO.md).
+> The returned `task` is a **suggestion** — it is not inserted automatically.
+> Persist it with `POST /api/summaries/<summary_id>/convert-to-tasks` (§7.5).
 
 ---
 
@@ -62,10 +63,16 @@ curl -X POST http://127.0.0.1:5000/api/summaries/create \
 
 - **Auth:** 🔒 JWT
 
-**Responses:** `200` array of summaries · `500`
+**Query parameters (optional):** `page` (int ≥ 1) and `limit` (int 1–100, default 50).
+Supplying either switches the body to the paged envelope
+(`{ "items": [...], "pagination": { page, limit, total, totalPages, hasNext, hasPrev } }`);
+without them the bare array is returned (legacy shape).
+
+**Responses:** `200` array (or paged envelope) · `400` invalid `page`/`limit` · `500`
 
 ```bash
-curl http://127.0.0.1:5000/api/summaries/ -H "Authorization: Bearer <access_token>"
+curl "http://127.0.0.1:5000/api/summaries/?page=1&limit=20" \
+  -H "Authorization: Bearer <access_token>"
 ```
 
 ---
@@ -90,3 +97,24 @@ curl http://127.0.0.1:5000/api/summaries/ -H "Authorization: Bearer <access_toke
 - **Auth:** 🔒 JWT
 
 **Responses:** `200 { "message": "Summary deleted" }` · `404 { "message": "Summary not found" }` · `500`
+
+---
+
+## 7.5 `POST /api/summaries/<summary_id>/convert-to-tasks` — Persist the task suggestion
+
+- **Auth:** 🔒 JWT
+- **Behavior:** turns the companion task the create response only *suggested*
+  into a real task document (title `Summary Task`, description = joined bullets,
+  category `Uncategorized`, `createdFrom: "natural-language"`).
+
+**Responses**
+
+| Code | Body |
+|------|------|
+| `201` | the created task (same shape as §3.1) |
+| `404` | `{ "message": "Summary not found" }` (missing or another user's) |
+
+```bash
+curl -X POST http://127.0.0.1:5000/api/summaries/6890sum.../convert-to-tasks \
+  -H "Authorization: Bearer <access_token>"
+```

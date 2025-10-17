@@ -4,6 +4,7 @@ from __future__ import annotations
 from flask import Blueprint, Response, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
+from ..core.query import parse_page_params
 from ..core.responses import api_response
 from ..services import get_services
 from ..utils.pdf_to_text import extract_pdf_text
@@ -30,8 +31,23 @@ def create_summary() -> Response:
 @summaries_bp.route("/", methods=["GET"])
 @jwt_required()
 def list_summaries() -> Response:
-    summaries = get_services().summaries.list(get_jwt_identity())
+    """List summaries; optional ``page``/``limit`` switches to the paged envelope."""
+    summaries = get_services().summaries.list(
+        get_jwt_identity(), page=parse_page_params(request.args)
+    )
     return api_response(summaries, 200)
+
+
+@summaries_bp.route("/<summary_id>/convert-to-tasks", methods=["POST"])
+@jwt_required()
+def convert_summary_to_task(summary_id: str) -> Response:
+    """Persist the companion task suggestion for an owned summary."""
+    task = get_services().summaries.convert_to_task(
+        summary_id, get_jwt_identity()
+    )
+    if task is None:
+        return api_response({"message": "Summary not found"}, 404)
+    return api_response(task, 201)
 
 
 @summaries_bp.route("/<summary_id>", methods=["PUT"])

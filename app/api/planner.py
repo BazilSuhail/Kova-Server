@@ -55,6 +55,21 @@ def update_tasks(planner_id: str) -> Response:
     return api_response({"message": "Planner not found"}, 404)
 
 
+@planner_bp.route("/<planner_id>", methods=["PUT"])
+@jwt_required()
+def update_planner(planner_id: str) -> Response:
+    """Update a planner wholesale (whitelisted fields only)."""
+    data = request.get_json(silent=True)
+    if not data:
+        return api_response({"message": "JSON body required"}, 400)
+    updated = get_services().planner.update(
+        planner_id, get_jwt_identity(), data
+    )
+    if updated:
+        return api_response({"message": "Planner updated"}, 200)
+    return api_response({"message": "Planner not found"}, 404)
+
+
 @planner_bp.route("/<planner_id>", methods=["DELETE"])
 @jwt_required()
 def delete_planner(planner_id: str) -> Response:

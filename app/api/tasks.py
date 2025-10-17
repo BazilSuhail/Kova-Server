@@ -8,6 +8,7 @@ from __future__ import annotations
 from flask import Blueprint, Response, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
+from ..core.query import parse_bool_arg, parse_page_params
 from ..core.responses import api_response
 from ..services import get_services
 
@@ -51,7 +52,15 @@ def create_task_from_voice() -> Response:
 @tasks_bp.route("/", methods=["GET"])
 @jwt_required()
 def list_tasks() -> Response:
-    tasks = get_services().tasks.list(get_jwt_identity())
+    """List tasks; optional filters ``completed``/``category``/``q`` and paging
+    ``page``/``limit`` (adds the paged envelope — see ``docs/sections/03-tasks.md``)."""
+    tasks = get_services().tasks.list(
+        get_jwt_identity(),
+        completed=parse_bool_arg(request.args, "completed"),
+        category=request.args.get("category") or None,
+        query=request.args.get("q") or None,
+        page=parse_page_params(request.args),
+    )
     return api_response(tasks, 200)
 
 

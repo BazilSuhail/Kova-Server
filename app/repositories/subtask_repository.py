@@ -25,6 +25,10 @@ class SubtaskRepository(BaseRepository):
     def update_fields(self, subtask_id: str, fields: dict[str, Any]) -> int:
         return self.update({"subtaskId": subtask_id}, fields).modified_count
 
+    def delete_by_subtask_id(self, subtask_id: str) -> int:
+        """Delete one subtask document (ownership verified by the service)."""
+        return self.delete_one({"subtaskId": subtask_id}).deleted_count
+
     def delete_by_task(self, task_id: str) -> int:
-        """Bulk delete — the API only removes subtasks per parent task."""
+        """Bulk delete — removes every subtask of one parent task."""
         return self.delete_many({"taskId": task_id}).deleted_count

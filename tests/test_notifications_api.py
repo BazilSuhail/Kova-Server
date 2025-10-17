@@ -60,3 +60,46 @@ def test_update_notification_returns_404_when_missing(client, auth):
     )
     assert response.status_code == 404
     assert response.get_json() == {"message": "Notification not found"}
+
+
+def test_get_notification_returns_single_item(client, auth):
+    headers = auth()
+    created = _create(client, headers, "Solo notice").get_json()
+    response = client.get(
+        f"/api/notifications/{created['notificationId']}", headers=headers
+    )
+    assert response.status_code == 200
+    assert response.get_json()["title"] == "Solo notice"
+
+
+def test_get_notification_returns_404_for_other_users_item(client, auth):
+    mine = auth("owner@example.com")
+    theirs = auth("other@example.com")
+    created = _create(client, theirs, "Not yours").get_json()
+    response = client.get(
+        f"/api/notifications/{created['notificationId']}", headers=mine
+    )
+    assert response.status_code == 404
+
+
+def test_delete_notification_removes_it_then_404s(client, auth):
+    headers = auth()
+    created = _create(client, headers, "Temp").get_json()
+    notification_id = created["notificationId"]
+
+    deleted = client.delete(
+        f"/api/notifications/{notification_id}", headers=headers
+    )
+    assert deleted.status_code == 200
+    assert deleted.get_json() == {"message": "Notification deleted"}
+
+    assert (
+        client.get(f"/api/notifications/{notification_id}", headers=headers).status_code
+        == 404
+    )
+    assert (
+        client.delete(
+            f"/api/notifications/{notification_id}", headers=headers
+        ).status_code
+        == 404
+    )

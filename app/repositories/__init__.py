@@ -7,6 +7,7 @@ from .planner_repository import PlannerRepository
 from .subtask_repository import SubtaskRepository
 from .summary_repository import SummaryRepository
 from .task_repository import TaskRepository
+from .token_blocklist_repository import TokenBlocklistRepository
 from .user_repository import UserRepository
 
 __all__ = [
@@ -16,5 +17,6 @@ __all__ = [
     "SubtaskRepository",
     "SummaryRepository",
     "TaskRepository",
+    "TokenBlocklistRepository",
     "UserRepository",
 ]

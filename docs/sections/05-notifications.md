@@ -1,6 +1,6 @@
 # 5. Notifications API — `/api/notifications`
 
-> File: `app/api/notifications.py` · Blueprint: `notifications_bp` · **3 endpoints** · **All JWT-protected**
+> File: `app/api/notifications.py` · Blueprint: `notifications_bp` · **5 endpoints** · **All JWT-protected**
 
 Notifications are sorted `createdAt` descending (newest first).
 
@@ -43,7 +43,17 @@ Notifications are sorted `createdAt` descending (newest first).
 
 - **Auth:** 🔒 JWT
 
-**Responses:** `200` array (newest first) · `500`
+**Query parameters (all optional)**
+
+| Param | Type | Effect |
+|-------|------|--------|
+| `unread` | `true` / `false` | filter by read state |
+| `page` | int ≥ 1 | switches response to the paged envelope (see below) |
+| `limit` | int 1–100 | page size (default 50; used with `page`) |
+
+**Responses:** `200` array (newest first) · `400` invalid `unread`/`page`/`limit` · `500`
+
+Without `page`/`limit` the body is the bare array:
 
 ```json
 [
@@ -61,14 +71,34 @@ Notifications are sorted `createdAt` descending (newest first).
 ]
 ```
 
+With `?page=1&limit=20`:
+
+```json
+{
+  "items": [ { "...": "notification" } ],
+  "pagination": {
+    "page": 1, "limit": 20, "total": 42,
+    "totalPages": 3, "hasNext": true, "hasPrev": false
+  }
+}
+```
+
 ```bash
-curl http://127.0.0.1:5000/api/notifications/ \
+curl http://127.0.0.1:5000/api/notifications/?unread=true \
   -H "Authorization: Bearer <access_token>"
 ```
 
 ---
 
-## 5.3 `PUT /api/notifications/<notification_id>` — Update notification
+## 5.3 `GET /api/notifications/<notification_id>` — Single notification
+
+- **Auth:** 🔒 JWT
+
+**Responses:** `200` notification · `404 { "message": "Notification not found" }` (missing or another user's)
+
+---
+
+## 5.4 `PUT /api/notifications/<notification_id>` — Update notification
 
 - **Auth:** 🔒 JWT
 - **Content-Type:** `application/json`
@@ -81,4 +111,10 @@ curl http://127.0.0.1:5000/api/notifications/ \
 
 **Responses:** `200 { "message": "Notification updated" }` · `404 { "message": "Notification not found" }` · `500`
 
-**⚠️ Missing:** no `GET /<id>` and no `DELETE /<id>` (see [TODO.md](../TODO.md)).
+---
+
+## 5.5 `DELETE /api/notifications/<notification_id>` — Delete notification
+
+- **Auth:** 🔒 JWT
+
+**Responses:** `200 { "message": "Notification deleted" }` · `404 { "message": "Notification not found" }` · `500`

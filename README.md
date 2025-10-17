@@ -2,7 +2,7 @@
 
 A Flask REST API for task management (tasks, subtasks, planner, summaries, notifications) with MongoDB and JWT authentication.
 
-- **API reference:** [`docs/README.md`](docs/README.md) — **31 endpoints** across 9 sections
+- **API reference:** [`docs/README.md`](docs/README.md) — **41 endpoints** across 10 sections
 - **Open work:** [`docs/TODO.md`](docs/TODO.md)
 
 ***
@@ -84,7 +84,7 @@ zenflow-server/
 └── tests/
     ├── conftest.py               # app/client/auth fixtures (in-memory DB)
     ├── support/fake_mongo.py     # dependency-free PyMongo stand-in
-    └── test_*.py                 # 54 endpoint/security tests
+    └── test_*.py                 # 87 endpoint/security tests
 ```
 
 ***
@@ -96,16 +96,17 @@ Full request/response schemas: **[`docs/README.md`](docs/README.md)**
 
 | Section | Endpoints |
 |---------|-----------|
-| **Auth** (2) | `POST /api/auth/signup` · `POST /api/auth/login` |
+| **Auth** (6) | `POST /api/auth/signup` · `POST /api/auth/login` · `POST /api/auth/refresh` · `POST /api/auth/logout` · `GET /api/auth/me` · `PUT /api/auth/password` |
 | **Users** (3) | `GET/PUT/DELETE /api/users/profile` |
-| **Tasks** (7) | `POST /api/tasks/` · `POST /api/tasks/create/natural-language` · `POST /api/tasks/create/voice` · `GET /api/tasks/` · `GET/PUT/DELETE /api/tasks/<task_id>` |
-| **Subtasks** (4) | `POST /api/subtasks/create` · `GET/DELETE /api/subtasks/task/<task_id>` · `PUT /api/subtasks/<subtask_id>` |
-| **Notifications** (3) | `POST/GET /api/notifications/` · `PUT /api/notifications/<notification_id>` |
-| **Planner** (5) | `POST/GET /api/planner/` · `PUT /api/planner/<planner_id>/focus` · `PUT /api/planner/<planner_id>/tasks` · `DELETE /api/planner/<planner_id>` |
-| **Summaries** (4) | `POST /api/summaries/create` · `GET /api/summaries/` · `PUT/DELETE /api/summaries/<summary_id>` |
+| **Tasks** (7) | `POST /api/tasks/` · `POST /api/tasks/create/natural-language` · `POST /api/tasks/create/voice` · `GET /api/tasks/` *(filters + paging)* · `GET/PUT/DELETE /api/tasks/<task_id>` |
+| **Subtasks** (5) | `POST /api/subtasks/create` · `GET/DELETE /api/subtasks/task/<task_id>` · `PUT/DELETE /api/subtasks/<subtask_id>` |
+| **Notifications** (5) | `POST/GET /api/notifications/` *(unread filter + paging)* · `GET/PUT/DELETE /api/notifications/<notification_id>` |
+| **Planner** (6) | `POST/GET /api/planner/` · `PUT /api/planner/<planner_id>` · `PUT /api/planner/<planner_id>/focus` · `PUT /api/planner/<planner_id>/tasks` · `DELETE /api/planner/<planner_id>` |
+| **Summaries** (5) | `POST /api/summaries/create` · `GET /api/summaries/` *(paging)* · `PUT/DELETE /api/summaries/<summary_id>` · `POST /api/summaries/<summary_id>/convert-to-tasks` |
 | **Daily Recap** (1) | `GET /api/daily-recap/` |
+| **Weekly Recap** (1) | `GET /api/weekly-recap/` |
 | **Health** (2) | `GET /api/health` · `GET /api/health/ready` (public) |
-| **Total** | **31** |
+| **Total** | **41** |
 
 ***
 

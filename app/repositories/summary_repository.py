@@ -15,6 +15,19 @@ class SummaryRepository(BaseRepository):
     def find_for_user(self, user_id: str) -> list[dict[str, Any]]:
         return self.find_many({"userId": user_id})
 
+    def find_by_id_for_user(
+        self, summary_id: str, user_id: str
+    ) -> dict[str, Any] | None:
+        return self.find_one({"summaryId": summary_id, "userId": user_id})
+
+    def count_for_user(self, user_id: str) -> int:
+        return self.count({"userId": user_id})
+
+    def find_page_for_user(
+        self, user_id: str, *, skip: int, limit: int
+    ) -> list[dict[str, Any]]:
+        return self.find_page({"userId": user_id}, skip=skip, limit=limit)
+
     def update_fields(self, summary_id: str, user_id: str, fields: dict[str, Any]) -> int:
         return self.update(
             {"summaryId": summary_id, "userId": user_id}, fields

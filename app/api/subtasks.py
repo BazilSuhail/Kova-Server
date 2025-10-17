@@ -38,6 +38,18 @@ def update_subtask(subtask_id: str) -> Response:
     return api_response({"message": "Subtask not found"}, 404)
 
 
+@subtasks_bp.route("/<subtask_id>", methods=["DELETE"])
+@jwt_required()
+def delete_subtask(subtask_id: str) -> Response:
+    """Delete one subtask; the parent's ``hasSubtasks`` flag follows."""
+    deleted = get_services().subtasks.delete_one(
+        subtask_id, get_jwt_identity()
+    )
+    if deleted:
+        return api_response({"message": "Subtask deleted"}, 200)
+    return api_response({"message": "Subtask not found"}, 404)
+
+
 @subtasks_bp.route("/task/<task_id>", methods=["DELETE"])
 @jwt_required()
 def delete_subtasks_for_task(task_id: str) -> Response:

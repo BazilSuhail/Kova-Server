@@ -1,6 +1,6 @@
 # 6. Planner API — `/api/planner`
 
-> File: `app/api/planner.py` · Blueprint: `planner_bp` · **5 endpoints** · **All JWT-protected**
+> File: `app/api/planner.py` · Blueprint: `planner_bp` · **6 endpoints** · **All JWT-protected**
 
 A planner is a **per-day plan**: focus tasks, task list, and a reflection/mood.
 Collection: `planner` (unique index on `plannerId`, indexed on `userId`, `date`).
@@ -94,10 +94,29 @@ curl http://127.0.0.1:5000/api/planner/ -H "Authorization: Bearer <access_token>
 
 ---
 
-## 6.5 `DELETE /api/planner/<planner_id>` — Delete planner
+## 6.5 `PUT /api/planner/<planner_id>` — Full update
+
+- **Auth:** 🔒 JWT
+- **Content-Type:** `application/json`
+
+**Allowed fields:** `date`, `focusTasks`, `tasks`, `reflection` (at least one required)
+
+```json
+{ "reflection": "Great focus day", "focusTasks": ["Write docs"] }
+```
+
+**Responses**
+
+| Code | Body |
+|------|------|
+| `200` | `{ "message": "Planner updated" }` (also when values are unchanged) |
+| `400` | `{ "message": "JSON body required" }` \| `{ "message": "No updatable fields; expected one of: date, focusTasks, tasks, reflection" }` |
+| `404` | `{ "message": "Planner not found" }` (missing or another user's) |
+
+---
+
+## 6.6 `DELETE /api/planner/<planner_id>` — Delete planner
 
 - **Auth:** 🔒 JWT
 
 **Responses:** `200 { "message": "Planner deleted" }` · `404 { "message": "Planner not found" }` · `500`
-
-**⚠️ Note:** a full `PUT /api/planner/<planner_id>` update exists only as commented-out code.

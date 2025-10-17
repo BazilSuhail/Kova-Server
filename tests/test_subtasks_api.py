@@ -102,3 +102,62 @@ def test_delete_subtasks_for_task_returns_count_and_resets_parent(
 
     parent = client.get(f"/api/tasks/{task['taskId']}", headers=headers).get_json()
     assert parent["hasSubtasks"] is False
+
+
+def test_delete_single_subtask_keeps_flag_until_last_one(
+    client, auth, monkeypatch
+):
+    monkeypatch.setattr(
+        "app.services.subtask_service.generate_subtasks_from_description",
+        lambda _description: _STUBBED_SUBTASKS,
+    )
+    headers = auth()
+    task = _create_task(client, headers)
+    first = client.post(
+        "/api/subtasks/create", headers=headers, json={"taskId": task["taskId"]}
+    ).get_json()
+    client.post(
+        "/api/subtasks/create", headers=headers, json={"taskId": task["taskId"]}
+    )
+
+    # Sibling still present → parent flag untouched.
+    deleted = client.delete(
+        f"/api/subtasks/{first['subtaskId']}", headers=headers
+    )
+    assert deleted.status_code == 200
+    assert deleted.get_json() == {"message": "Subtask deleted"}
+    parent = client.get(f"/api/tasks/{task['taskId']}", headers=headers).get_json()
+    assert parent["hasSubtasks"] is True
+
+    # Remove the last one → flag resets.
+    remaining = client.get(
+        f"/api/subtasks/task/{task['taskId']}", headers=headers
+    ).get_json()
+    client.delete(f"/api/subtasks/{remaining[0]['subtaskId']}", headers=headers)
+    parent = client.get(f"/api/tasks/{task['taskId']}", headers=headers).get_json()
+    assert parent["hasSubtasks"] is False
+
+
+def test_delete_single_subtask_returns_404_when_missing_or_foreign(
+    client, auth, monkeypatch
+):
+    monkeypatch.setattr(
+        "app.services.subtask_service.generate_subtasks_from_description",
+        lambda _description: _STUBBED_SUBTASKS,
+    )
+    missing = client.delete(
+        "/api/subtasks/689ffffffffffffffffffff", headers=auth()
+    )
+    assert missing.status_code == 404
+    assert missing.get_json() == {"message": "Subtask not found"}
+
+    mine = auth("owner@example.com")
+    theirs = auth("other@example.com")
+    task = _create_task(client, theirs)
+    theirs_subtask = client.post(
+        "/api/subtasks/create", headers=theirs, json={"taskId": task["taskId"]}
+    ).get_json()
+    foreign = client.delete(
+        f"/api/subtasks/{theirs_subtask['subtaskId']}", headers=mine
+    )
+    assert foreign.status_code == 404

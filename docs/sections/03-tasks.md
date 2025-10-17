@@ -86,14 +86,41 @@ curl -X POST http://127.0.0.1:5000/api/tasks/create/voice \
 
 ---
 
-## 3.4 `GET /api/tasks/` — List all tasks
+## 3.4 `GET /api/tasks/` — List tasks
 
 - **Auth:** 🔒 JWT
 
-**Responses:** `200` array of the current user's tasks · `500`
+**Query parameters (all optional)**
+
+| Param | Type | Effect |
+|-------|------|--------|
+| `completed` | `true` / `false` | filter on `isCompleted` |
+| `category` | string | exact category match |
+| `q` | string | case-insensitive title substring |
+| `page` | int ≥ 1 | switches response to the paged envelope (see below) |
+| `limit` | int 1–100 | page size (default 50; used with `page`) |
+
+Without `page`/`limit` the body is the **bare array** (legacy shape — no params
+means no behavior change for existing clients):
+
+**Responses:** `200` array of the current user's tasks · `400` invalid query
+param (`page must be an integer`, `limit must be at most 100`, …) · `500`
 
 ```bash
-curl http://127.0.0.1:5000/api/tasks/ -H "Authorization: Bearer <access_token>"
+curl http://127.0.0.1:5000/api/tasks/?completed=false&q=report \
+  -H "Authorization: Bearer <access_token>"
+```
+
+With `?page=2&limit=20` the body becomes:
+
+```json
+{
+  "items": [ { "...": "task" } ],
+  "pagination": {
+    "page": 2, "limit": 20, "total": 37,
+    "totalPages": 2, "hasNext": false, "hasPrev": true
+  }
+}
 ```
 
 ---
