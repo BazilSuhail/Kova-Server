@@ -25,7 +25,7 @@ def generate_summary_from_llm(extracted_text: str) -> list[str]:
     groq_api_key = current_app.config["GROQ_API_KEY"]
     groq_llm_url = current_app.config.get("GROQ_LLM_URL", _DEFAULT_GROQ_URL)
 
-    payload = {
+    payload: dict[str, Any] = {
         "model": "llama3-70b-8192",
         "messages": [
             {"role": "system", "content": SUMMARY_SYSTEM_PROMPT},

@@ -10,6 +10,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from ..core.query import parse_bool_arg, parse_page_params
 from ..core.responses import api_response
+from ..core.validation import require_fields
 from ..services import get_services
 
 tasks_bp = Blueprint("tasks", __name__)
@@ -18,10 +19,8 @@ tasks_bp = Blueprint("tasks", __name__)
 @tasks_bp.route("/", methods=["POST"])
 @jwt_required()
 def create_task() -> Response:
-    data = request.get_json()
-    if not data or "title" not in data:
-        return api_response({"message": "Title required"}, 400)
-    task = get_services().tasks.create(data, get_jwt_identity())
+    data = require_fields(request.get_json(), "title", message="Title required")
+    task = get_services().tasks.create(dict(data), get_jwt_identity())
     return api_response(task, 201)
 
 
@@ -30,9 +29,11 @@ def create_task() -> Response:
 def create_task_from_natural_language() -> Response:
     if not request.is_json:
         return api_response({"message": "Request must be JSON"}, 415)
-    data = request.get_json()
-    if not data or "prompt" not in data:
-        return api_response({"message": "prompt is required in JSON body"}, 400)
+    data = require_fields(
+        request.get_json(),
+        "prompt",
+        message="prompt is required in JSON body",
+    )
     task = get_services().tasks.create_from_natural_language(
         get_jwt_identity(), data["prompt"]
     )

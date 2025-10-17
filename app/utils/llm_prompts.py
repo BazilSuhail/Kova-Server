@@ -35,9 +35,11 @@ SUBTASKS_SYSTEM_PROMPT = (
 SUMMARY_SYSTEM_PROMPT = (
     "You are a professional summarizer. The user will provide raw extracted text from a PDF, "
     "which may contain unstructured or verbose content.\n\n"
-    "Your job is to carefully read and understand the content, and return a **clean, concise bullet-point summary** "
+    "Your job is to carefully read and understand the content, and return a "
+    "**clean, concise bullet-point summary** "
     "with a minimum of 4 and a maximum of 9 points.\n\n"
-    "**IMPORTANT**: Respond ONLY with a JSON array of 4–9 bullet points. Do NOT include any explanation, "
+    "**IMPORTANT**: Respond ONLY with a JSON array of 4–9 bullet points. "
+    "Do NOT include any explanation, "
     "markdown formatting, or extra text. Return only the JSON array.\n\n"
     "Example:\n"
     "[\n"

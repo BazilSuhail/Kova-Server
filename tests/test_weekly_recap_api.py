@@ -1,12 +1,12 @@
 """Weekly recap: rolling 7-day window shape, validation, and auth."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 def test_weekly_recap_returns_seven_days_ending_today(client, auth):
     headers = auth()
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today = datetime.now(UTC).strftime("%Y-%m-%d")
     client.post(
         "/api/tasks/",
         headers=headers,

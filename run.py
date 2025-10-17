@@ -9,7 +9,9 @@ for _stream in (sys.stdout, sys.stderr):
     if _reconfigure is not None:
         _reconfigure(encoding="utf-8", errors="replace")
 
-from app import create_app
+# Imports come after the stream fix on purpose: UTF-8 must be in place before
+# anything (including app logging setup) writes to stdout on Windows.
+from app import create_app  # noqa: E402
 
 # Create the Flask app instance
 app = create_app()
@@ -18,10 +20,10 @@ def run_development():
     """Run development server with Waitress (same as production but with more logging)"""
     try:
         from waitress import serve
-        
+
         port = int(os.environ.get('PORT', 5000))
         host = '0.0.0.0'
-        
+
         print("Starting ZenFlow development server with Waitress...")
         print("✅ Using same server as production (Waitress)")
         print("🔧 Development mode - detailed logging enabled")
@@ -30,9 +32,9 @@ def run_development():
         print(f"   - Network: http://192.168.100.16:{port}")
         print("\nPress Ctrl+C to stop the server")
         print("-" * 50)
-        
+
         serve(
-            app, 
+            app,
             host=host,
             port=port,
             threads=4,                # Fewer threads for dev
@@ -57,25 +59,25 @@ def run_production():
     """Run production server with Waitress"""
     try:
         from waitress import serve
-        
+
         # Get port from environment (Railway, Heroku, etc.) or default to 5000
         port = int(os.environ.get('PORT', 5000))
         host = '0.0.0.0'
-        
+
         print("Starting ZenFlow production server...")
         print("✅ No development server warnings!")
         print("🚀 Production server ready at:")
         print(f"   - Host: {host}")
         print(f"   - Port: {port}")
-        
+
         # Check if running on Railway
         if os.environ.get('RAILWAY_ENVIRONMENT'):
             print("🚂 Detected Railway deployment")
-        
+
         print("\nPress Ctrl+C to stop the server")
-        
+
         serve(
-            app, 
+            app,
             host=host,
             port=port,
             threads=3,                # Handle 3 concurrent requests
@@ -115,11 +117,11 @@ if __name__ == "__main__":
             print(f"Unknown argument: {sys.argv[1]}")
             print("Use --help for available options")
             sys.exit(1)
-    
+
     # Check environment variable or Railway deployment
     elif os.environ.get('FLASK_ENV') == 'production' or os.environ.get('RAILWAY_ENVIRONMENT'):
         run_production()
-    
+
     # Default to development
     else:
         run_development()

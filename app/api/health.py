@@ -26,7 +26,7 @@ def health() -> Response:
 def readiness() -> Response:
     """Readiness: Mongo answers a ping → 200, otherwise 503 (probe retries)."""
     try:
-        current_app.db.command("ping")
+        current_app.db.command("ping")  # type: ignore[attr-defined]  # set by init_db
     except Exception:
         logger.warning("readiness_probe_failed", extra={"dependency": "mongodb"})
         return api_response({"status": "unavailable"}, 503)

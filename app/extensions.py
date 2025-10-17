@@ -1,11 +1,48 @@
 """Flask extension initialisation, kept out of the app factory for clarity."""
 from __future__ import annotations
 
-from flask import Flask
+from flask import Flask, current_app
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 from .config import Settings
+
+# Singleton limiter: view/blueprint decorators bind to it at import time, and
+# ``init_app`` gives *each* app its own fresh storage (per-process memory by
+# default) — which is also what keeps test apps isolated from each other.
+limiter = Limiter(key_func=get_remote_address, headers_enabled=True)
+
+
+def _default_rate_limit() -> str:
+    """App-wide default limit for the *current* app (flask-limiter call-time hook)."""
+    return current_app.config["ZENFLOW_RATELIMIT_DEFAULT"]
+
+
+def init_limiter(app: Flask, settings: Settings) -> None:
+    """Configure rate limiting (flask-limiter).
+
+    Every route gets ``ZENFLOW_RATELIMIT_DEFAULT`` (600/min per IP); the auth
+    views override it with the stricter ``ZENFLOW_RATELIMIT_AUTH``. Health
+    probes are exempt — orchestrators must never be throttled.
+    """
+    app.config["RATELIMIT_ENABLED"] = settings.rate_limit_enabled
+    # flask-limiter snapshots RATELIMIT_DEFAULT when the *first* app in the
+    # process inits (plain strings are baked into the shared limit manager), so
+    # a later app's value would be ignored. A callable provider is re-resolved
+    # on every request instead — one shared limiter, per-app values.
+    app.config["ZENFLOW_RATELIMIT_DEFAULT"] = settings.rate_limit_default
+    app.config["RATELIMIT_DEFAULT"] = _default_rate_limit
+    app.config["RATELIMIT_STORAGE_URI"] = settings.rate_limit_storage_uri
+    app.config["RATELIMIT_HEADERS_ENABLED"] = True
+    # Read by the auth views through a callable limit (evaluated per request).
+    app.config["ZENFLOW_RATELIMIT_AUTH"] = settings.rate_limit_auth
+    limiter.init_app(app)
+
+    from .api.health import health_bp  # late import: avoids an api↔extensions cycle
+
+    limiter.exempt(health_bp)
 
 
 def init_jwt(app: Flask, settings: Settings) -> None:

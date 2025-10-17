@@ -5,6 +5,7 @@ from flask import Blueprint, Response, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from ..core.responses import api_response
+from ..core.validation import require_fields
 from ..services import get_services
 
 subtasks_bp = Blueprint("subtasks", __name__)
@@ -13,10 +14,10 @@ subtasks_bp = Blueprint("subtasks", __name__)
 @subtasks_bp.route("/create", methods=["POST"])
 @jwt_required()
 def create_subtasks() -> Response:
-    data = request.get_json()
-    if not data or "taskId" not in data:
-        return api_response({"message": "taskId is required"}, 400)
-    subtask = get_services().subtasks.create(data, get_jwt_identity(), data["taskId"])
+    data = require_fields(request.get_json(), "taskId", message="taskId is required")
+    subtask = get_services().subtasks.create(
+        dict(data), get_jwt_identity(), data["taskId"]
+    )
     return api_response(subtask, 201)
 
 

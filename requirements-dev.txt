@@ -3,3 +3,6 @@
 -r requirements.txt
 
 pytest==9.1.1
+pytest-cov==7.1.0    # coverage gate: --cov-fail-under=85 (see pytest.ini)
+ruff==0.16.10        # lint gate: ruff check app tests run.py (config in pyproject.toml)
+mypy==2.4.0          # type gate: mypy (config in pyproject.toml)

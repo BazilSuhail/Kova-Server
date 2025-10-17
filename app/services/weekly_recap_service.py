@@ -5,7 +5,7 @@ the exact shape the daily endpoint already returns.
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from ..core.exceptions import ValidationError
@@ -68,8 +68,8 @@ class WeeklyRecapService:
     @staticmethod
     def _parse_end(end: str | None) -> datetime:
         if end is None:
-            return datetime.now(timezone.utc)
+            return datetime.now(UTC)
         try:
-            return datetime.strptime(end, _DATE_FORMAT).replace(tzinfo=timezone.utc)
+            return datetime.strptime(end, _DATE_FORMAT).replace(tzinfo=UTC)
         except ValueError as exc:
             raise ValidationError("end must be a YYYY-MM-DD date") from exc

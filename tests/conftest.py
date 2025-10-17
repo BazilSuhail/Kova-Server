@@ -2,9 +2,9 @@
 from __future__ import annotations
 
 import pytest
-
 from app import create_app
 from app.config import Settings
+
 from tests.support.fake_mongo import FakeMongoClient
 
 

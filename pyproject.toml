@@ -1,0 +1,22 @@
+# Quality-gate configuration: ruff (lint/format) + mypy (type checking).
+# Run: ruff check app tests run.py   |   mypy   (both configured here)
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+# E/F/W: pycodestyle + pyflakes basics · I: import sorting ·
+# UP: py313 modernisation · B: bugbear (real footguns) · C4: comprehensions
+select = ["E", "F", "W", "I", "UP", "B", "C4"]
+
+[tool.mypy]
+python_version = "3.13"
+files = ["app"]
+check_untyped_defs = true
+ignore_missing_imports = true      # flask-* extensions lack stubs in places
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_unused_configs = true
+show_error_codes = true

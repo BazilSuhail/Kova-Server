@@ -1,7 +1,7 @@
 """In-app notifications (reminders, task events) for the current user."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from bson import ObjectId
@@ -26,7 +26,7 @@ class NotificationService:
             "message": data["message"],
             "type": data.get("type", ""),
             "relatedId": data.get("relatedId", ""),
-            "createdAt": datetime.now(timezone.utc).isoformat(),
+            "createdAt": datetime.now(UTC).isoformat(),
             "read": False,
             "triggerTime": data.get("triggerTime"),
         }

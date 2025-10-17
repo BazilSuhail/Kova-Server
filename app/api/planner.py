@@ -5,6 +5,7 @@ from flask import Blueprint, Response, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from ..core.responses import api_response
+from ..core.validation import require_fields
 from ..services import get_services
 
 planner_bp = Blueprint("planner", __name__)
@@ -13,10 +14,8 @@ planner_bp = Blueprint("planner", __name__)
 @planner_bp.route("/", methods=["POST"])
 @jwt_required()
 def create_planner() -> Response:
-    data = request.get_json()
-    if not data or "date" not in data:
-        return api_response({"message": "Date required"}, 400)
-    planner = get_services().planner.create(data, get_jwt_identity())
+    data = require_fields(request.get_json(), "date", message="Date required")
+    planner = get_services().planner.create(dict(data), get_jwt_identity())
     return api_response(planner, 201)
 
 
@@ -30,9 +29,9 @@ def list_planners() -> Response:
 @planner_bp.route("/<planner_id>/focus", methods=["PUT"])
 @jwt_required()
 def update_focus(planner_id: str) -> Response:
-    data = request.get_json()
-    if "focusTasks" not in data:
-        return api_response({"message": "focusTasks required"}, 400)
+    data = require_fields(
+        request.get_json(), "focusTasks", message="focusTasks required"
+    )
     success = get_services().planner.update_focus(
         planner_id, get_jwt_identity(), data["focusTasks"]
     )
@@ -44,9 +43,7 @@ def update_focus(planner_id: str) -> Response:
 @planner_bp.route("/<planner_id>/tasks", methods=["PUT"])
 @jwt_required()
 def update_tasks(planner_id: str) -> Response:
-    data = request.get_json()
-    if "tasks" not in data:
-        return api_response({"message": "tasks required"}, 400)
+    data = require_fields(request.get_json(), "tasks", message="tasks required")
     success = get_services().planner.update_tasks(
         planner_id, get_jwt_identity(), data["tasks"]
     )

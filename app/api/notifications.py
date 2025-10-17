@@ -6,6 +6,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from ..core.query import parse_bool_arg, parse_page_params
 from ..core.responses import api_response
+from ..core.validation import require_fields
 from ..services import get_services
 
 notifications_bp = Blueprint("notifications", __name__)
@@ -14,10 +15,16 @@ notifications_bp = Blueprint("notifications", __name__)
 @notifications_bp.route("/", methods=["POST"])
 @jwt_required()
 def create_notification() -> Response:
-    data = request.get_json()
-    if not data or not data.get("title") or not data.get("message"):
-        return api_response({"message": "Title and message are required"}, 400)
-    notification = get_services().notifications.create(get_jwt_identity(), data)
+    data = require_fields(
+        request.get_json(),
+        "title",
+        "message",
+        message="Title and message are required",
+        truthy=True,
+    )
+    notification = get_services().notifications.create(
+        get_jwt_identity(), dict(data)
+    )
     return api_response(notification, 201)
 
 

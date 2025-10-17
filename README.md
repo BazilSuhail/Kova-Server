@@ -45,7 +45,7 @@ zenflow-server/
 ├── run.py                        # entrypoint: dev/prod/debug runners (Waitress)
 ├── pytest.ini                    # test discovery config
 ├── requirements.txt              # pinned runtime deps
-├── requirements-dev.txt          # runtime + pytest
+├── requirements-dev.txt          # runtime + pytest, ruff, mypy, coverage
 ├── .env.example                  # every supported env var, documented
 │
 ├── app/
@@ -84,7 +84,7 @@ zenflow-server/
 └── tests/
     ├── conftest.py               # app/client/auth fixtures (in-memory DB)
     ├── support/fake_mongo.py     # dependency-free PyMongo stand-in
-    └── test_*.py                 # 87 endpoint/security tests
+    └── test_*.py                 # 99 endpoint/security tests
 ```
 
 ***
@@ -110,11 +110,13 @@ Full request/response schemas: **[`docs/README.md`](docs/README.md)**
 
 ***
 
-## 🧪 Testing
+## 🧪 Testing & Quality Gates
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest
+python -m pytest              # 99 tests + coverage gate (fails under 85%)
+ruff check app tests run.py   # lint — must be clean
+mypy                          # type check — must be clean
 ```
 
 Tests run against an in-memory Mongo stand-in — no database or network needed.
@@ -130,3 +132,6 @@ Tests run against an in-memory Mongo stand-in — no database or network needed.
   every response carries `X-Content-Type-Options`/`X-Frame-Options`/`Referrer-Policy`.
   CORS allowlist (`ZENFLOW_CORS_ORIGINS`, default `*`) and the 16 MB upload cap
   (`ZENFLOW_MAX_UPLOAD_MB`) are configurable.
+- **Per-IP rate limiting** (default 600/min; auth routes 60/min — `ZENFLOW_RATELIMIT_*`)
+  returns JSON `429`; health probes are exempt. Sentry reports 500s when
+  `ZENFLOW_SENTRY_DSN` is set (disabled otherwise).

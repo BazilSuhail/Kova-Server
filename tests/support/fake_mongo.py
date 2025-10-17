@@ -73,17 +73,17 @@ class FakeCursor:
     def __init__(self, documents: list[dict[str, Any]]) -> None:
         self._documents = documents
 
-    def sort(self, key: str, direction: int = 1) -> "FakeCursor":
+    def sort(self, key: str, direction: int = 1) -> FakeCursor:
         self._documents.sort(
             key=lambda doc: doc.get(key) or "", reverse=direction == -1
         )
         return self
 
-    def skip(self, count: int) -> "FakeCursor":
+    def skip(self, count: int) -> FakeCursor:
         self._documents = self._documents[count:]
         return self
 
-    def limit(self, count: int) -> "FakeCursor":
+    def limit(self, count: int) -> FakeCursor:
         self._documents = self._documents[:count]
         return self
 

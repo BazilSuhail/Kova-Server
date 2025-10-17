@@ -40,6 +40,20 @@ Work list generated from the API analysis of `app/` + `run.py`.
 - [x] `GET /api/weekly-recap/` — rolling 7-day recap (`?end=YYYY-MM-DD`)
 - [x] Test suite: **87 passing**; endpoint count **41** (29 legacy + health + 10 new)
 
+## 🧰 Sprint C — Quality Gates (done)
+
+- [x] Rate limiting (`flask-limiter`): per-IP `ZENFLOW_RATELIMIT_DEFAULT` (600/min)
+      + stricter `ZENFLOW_RATELIMIT_AUTH` (60/min on signup/login/refresh/password),
+      `X-RateLimit-*` headers, JSON `429`, health probes exempt,
+      `ZENFLOW_RATELIMIT_ENABLED=false` off-switch, `ZENFLOW_RATELIMIT_STORAGE_URI` for Redis
+- [x] Request-validation layer (`app/core/validation.py` — `require_fields`) wired into
+      11 route payload checks with contract-identical messages
+- [x] Sentry error tracking: active only when `ZENFLOW_SENTRY_DSN` is set; 500s reported
+- [x] Lint gate: **ruff clean** (config in `pyproject.toml`)
+- [x] Type gate: **mypy clean** — 48 files
+- [x] Coverage gate: `--cov-fail-under=85` in `pytest.ini` (current **88%**)
+- [x] Test suite: **99 passing**
+
 ## 📝 Documentation TODOs
 
 - [ ] Add copy-paste `curl` example to every single endpoint (currently per-section only)
@@ -86,5 +100,5 @@ Still open:
 - [x] Add `GET /api/weekly-recap/` (rolling 7-day recap)
 - [x] Add health-check endpoint `GET /api/health` for Railway/Waitress probes
       (+ `GET /api/health/ready` with Mongo ping → 503)
-- [ ] Rate limiting + request validation layer (e.g. `flask-smorest` / `marshmallow`) — *Sprint C*
-- [x] Tests for all active endpoints under `tests/` — **87 passing**
+- [x] Rate limiting + request validation layer — *Sprint C* (see above)
+- [x] Tests for all active endpoints under `tests/` — **99 passing**

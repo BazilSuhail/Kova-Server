@@ -1,7 +1,7 @@
 """Registration, credential checks, token revocation; hashes live here."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import bcrypt
@@ -10,7 +10,6 @@ from bson import ObjectId
 from ..core.exceptions import AuthenticationError, NotFoundError, ValidationError
 from ..repositories.token_blocklist_repository import TokenBlocklistRepository
 from ..repositories.user_repository import UserRepository
-
 
 # Pinned explicitly so a bcrypt library default change can't silently weaken hashes.
 PASSWORD_HASH_ROUNDS = 12
@@ -49,7 +48,7 @@ class AuthService:
             "preferences": data.get(
                 "preferences", {"theme": "light", "notificationsEnabled": True}
             ),
-            "createdAt": datetime.now(timezone.utc).isoformat(),
+            "createdAt": datetime.now(UTC).isoformat(),
         }
         return self._users.insert(user)
 
@@ -104,7 +103,7 @@ class AuthService:
         """Blacklist one token until its own expiry (``exp`` is unix seconds)."""
         if self._tokens is None or not jti:
             return
-        expires_at = datetime.fromtimestamp(exp, tz=timezone.utc)
+        expires_at = datetime.fromtimestamp(exp, tz=UTC)
         self._tokens.revoke(jti, token_type, user_id, expires_at)
 
     def is_revoked(self, jti: str) -> bool:

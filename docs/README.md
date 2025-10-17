@@ -85,6 +85,7 @@ curl http://127.0.0.1:5000/api/tasks/ \
 | `404` | Not found | `{"message": "..."}` |
 | `413` | Upload over `ZENFLOW_MAX_UPLOAD_MB` | `{"message": "Request payload too large"}` |
 | `415` | Wrong content type (NLP task) | `{"message": "..."}` |
+| `429` | Per-IP rate limit exceeded | `{"message": "Rate limit exceeded"}` + `X-RateLimit-*` / `Retry-After` headers |
 | `500` | Server error | `{"message": "Internal server error"}` (details only in server logs) |
 | `503` | DB unreachable (readiness probe) | `{"status": "unavailable"}` |
 

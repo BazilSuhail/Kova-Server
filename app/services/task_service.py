@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from bson import ObjectId
@@ -31,7 +31,7 @@ def _build_document(
         "dueDate": fields.get("dueDate", ""),
         "isCompleted": False,
         "createdFrom": created_from,
-        "createdAt": datetime.now(timezone.utc).isoformat(),
+        "createdAt": datetime.now(UTC).isoformat(),
         "hasSubtasks": False,
     }
 
@@ -52,7 +52,7 @@ class TaskService:
             "dueDate": data.get("dueDate", ""),
             "isCompleted": False,
             "createdFrom": data.get("createdFrom", "manual"),
-            "createdAt": datetime.now(timezone.utc).isoformat(),
+            "createdAt": datetime.now(UTC).isoformat(),
             "hasSubtasks": False,
         }
         return self._tasks.insert_task(document)

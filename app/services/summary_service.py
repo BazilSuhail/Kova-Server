@@ -1,7 +1,7 @@
 """PDF → LLM bullet summary, plus a derived task suggestion."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from bson import ObjectId
@@ -23,7 +23,7 @@ class SummaryService:
         self._tasks = tasks
 
     def create(
-        self, user_id: str, extracted_text: str, original_filename: str
+        self, user_id: str, extracted_text: str, original_filename: str | None
     ) -> dict[str, Any]:
         """Summarize extracted PDF text and persist the summary.
 
@@ -42,7 +42,7 @@ class SummaryService:
             "dueDate": "",
             "isCompleted": False,
             "createdFrom": "natural-language",
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
         }
         summary = {
             "summaryId": str(ObjectId()),
@@ -50,7 +50,7 @@ class SummaryService:
             "sourceType": "pdf",
             "originalFileName": original_filename,
             "summaryBullets": summary_bullets,
-            "createdAt": datetime.now(timezone.utc).isoformat(),
+            "createdAt": datetime.now(UTC).isoformat(),
         }
         self._summaries.insert(summary)
         return {"summary": summary, "task": task}
@@ -87,7 +87,7 @@ class SummaryService:
             "dueDate": "",
             "isCompleted": False,
             "createdFrom": "natural-language",
-            "createdAt": datetime.now(timezone.utc).isoformat(),
+            "createdAt": datetime.now(UTC).isoformat(),
             "hasSubtasks": False,
         }
         return self._tasks.insert_task(document)

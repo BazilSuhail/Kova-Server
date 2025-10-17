@@ -17,7 +17,7 @@ def connect_mongo(mongo_uri: str) -> MongoClient:
     still fail fast instead of hanging.  The URI itself is never logged — it
     can embed credentials.
     """
-    client = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
+    client: MongoClient = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
     client.admin.command("ping")
     logger.info("mongodb connected")
     return client
@@ -26,7 +26,8 @@ def connect_mongo(mongo_uri: str) -> MongoClient:
 def init_db(app: Flask, client: MongoClient) -> Database:
     """Attach the default database to the app and ensure indexes exist."""
     db = client.get_database()
-    app.db = db  # kept for backward compatibility with code reading ``app.db``
+    # Flask has no declared ``db`` attribute; the dynamic attach is the point.
+    app.db = db  # type: ignore[attr-defined]  # kept for code reading ``app.db``
     create_indexes(db)
     return db
 

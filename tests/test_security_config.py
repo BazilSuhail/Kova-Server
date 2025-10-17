@@ -4,9 +4,9 @@ from __future__ import annotations
 import dataclasses
 
 import pytest
-
 from app import create_app
 from app.config import DEFAULT_JWT_SECRET, Settings
+
 from tests.support.fake_mongo import FakeMongoClient
 
 

@@ -1,12 +1,12 @@
 """Daily recap: the endpoint that always 500'd before the refactor."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 def test_daily_recap_returns_200_with_expected_shape(client, auth):
     headers = auth()
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today = datetime.now(UTC).strftime("%Y-%m-%d")
 
     done = client.post(
         "/api/tasks/",
@@ -38,7 +38,7 @@ def test_daily_recap_returns_200_with_expected_shape(client, auth):
 
 def test_daily_recap_reports_planner_reflection_as_mood(client, auth):
     headers = auth()
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today = datetime.now(UTC).strftime("%Y-%m-%d")
     client.post("/api/planner/", headers=headers, json={"date": today, "reflection": "Focused"})
 
     body = client.get("/api/daily-recap/", headers=headers).get_json()

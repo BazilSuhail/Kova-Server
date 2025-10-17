@@ -2,11 +2,12 @@
 
 Payload validation happens at the edge; credential, revocation, and password
 rules live in ``AuthService``. Tokens are minted here (flask-jwt-extended
-concern), never in services.
+concern), never in services. The credential-facing views carry the stricter
+per-IP rate limit from ``ZENFLOW_RATELIMIT_AUTH`` (brute-force protection).
 """
 from __future__ import annotations
 
-from flask import Blueprint, Response, request
+from flask import Blueprint, Response, current_app, request
 from flask_jwt_extended import (
     create_access_token,
     create_refresh_token,
@@ -19,12 +20,19 @@ from jwt.exceptions import PyJWTError
 
 from ..core.exceptions import AuthenticationError
 from ..core.responses import api_response
+from ..core.validation import require_fields
+from ..extensions import limiter
 from ..services import get_services
 
 auth_bp = Blueprint("auth", __name__)
 
 _REQUIRED_SIGNUP_FIELDS = ("name", "email", "password")
 _REQUIRED_LOGIN_FIELDS = ("email", "password")
+
+
+def _auth_rate() -> str:
+    """Auth rate-limit string for this app (settings-driven, read per request)."""
+    return current_app.config["ZENFLOW_RATELIMIT_AUTH"]
 
 
 def _decode(token: str) -> dict:
@@ -45,12 +53,11 @@ def _issue_tokens(user_id: str) -> dict[str, str]:
 
 
 @auth_bp.route("/signup", methods=["POST"])
+@limiter.limit(_auth_rate)
 def signup() -> Response:
     """Create a user and return an access + refresh token (public)."""
-    data = request.get_json()
-    if not data or not all(key in data for key in _REQUIRED_SIGNUP_FIELDS):
-        return api_response({"message": "Missing required fields"}, 400)
-    user = get_services().auth.signup(data)
+    data = require_fields(request.get_json(), *_REQUIRED_SIGNUP_FIELDS)
+    user = get_services().auth.signup(dict(data))
     tokens = _issue_tokens(user["userId"])
     return api_response(
         {"message": "User created", **tokens},
@@ -59,25 +66,28 @@ def signup() -> Response:
 
 
 @auth_bp.route("/login", methods=["POST"])
+@limiter.limit(_auth_rate)
 def login() -> Response:
     """Exchange credentials for an access + refresh token (public)."""
-    data = request.get_json()
-    if not data or not all(key in data for key in _REQUIRED_LOGIN_FIELDS):
-        return api_response({"message": "Missing required fields"}, 400)
+    data = require_fields(request.get_json(), *_REQUIRED_LOGIN_FIELDS)
     user = get_services().auth.authenticate(data["email"], data["password"])
     return api_response(_issue_tokens(user["userId"]), 200)
 
 
 @auth_bp.route("/refresh", methods=["POST"])
+@limiter.limit(_auth_rate)
 def refresh() -> Response:
     """Exchange a valid refresh token for a fresh access/refresh pair (public).
 
     The old refresh token is revoked (rotation), so a stolen token stops
     working the moment the legitimate client refreshes.
     """
-    data = request.get_json()
-    if not data or not data.get("refresh_token"):
-        return api_response({"message": "refresh_token is required"}, 400)
+    data = require_fields(
+        request.get_json(),
+        "refresh_token",
+        message="refresh_token is required",
+        truthy=True,
+    )
     claims = _decode(data["refresh_token"])
     if claims.get("type") != "refresh":
         raise AuthenticationError("Not a refresh token")
@@ -129,13 +139,16 @@ def me() -> Response:
 
 @auth_bp.route("/password", methods=["PUT"])
 @jwt_required()
+@limiter.limit(_auth_rate)
 def change_password() -> Response:
     """Rotate the caller's password after verifying the current one."""
-    data = request.get_json()
-    if not data or not data.get("currentPassword") or not data.get("newPassword"):
-        return api_response(
-            {"message": "currentPassword and newPassword are required"}, 400
-        )
+    data = require_fields(
+        request.get_json(),
+        "currentPassword",
+        "newPassword",
+        message="currentPassword and newPassword are required",
+        truthy=True,
+    )
     get_services().auth.change_password(
         get_jwt_identity(), data["currentPassword"], data["newPassword"]
     )

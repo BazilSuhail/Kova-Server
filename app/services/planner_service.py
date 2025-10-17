@@ -1,6 +1,7 @@
 """Daily planner: one document per day holding focus items and linked tasks."""
 from __future__ import annotations
 
+import builtins
 from typing import Any
 
 from bson import ObjectId
@@ -39,14 +40,18 @@ class PlannerService:
             )
         return planners
 
-    def update_focus(self, planner_id: str, user_id: str, focus_tasks: list[Any]) -> bool:
+    def update_focus(
+        self, planner_id: str, user_id: str, focus_tasks: builtins.list[Any]
+    ) -> bool:
         """Replace the focus list wholesale (the route validated presence)."""
         return (
             self._planners.update_fields(planner_id, user_id, {"focusTasks": focus_tasks})
             > 0
         )
 
-    def update_tasks(self, planner_id: str, user_id: str, task_ids: list[Any]) -> bool:
+    def update_tasks(
+        self, planner_id: str, user_id: str, task_ids: builtins.list[Any]
+    ) -> bool:
         """Replace the linked task-id array wholesale."""
         return (
             self._planners.update_fields(planner_id, user_id, {"tasks": task_ids}) > 0

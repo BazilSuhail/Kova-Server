@@ -5,7 +5,7 @@ so Mongo purges rows on its own once the token could no longer be used anyway.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from pymongo.database import Database
@@ -29,7 +29,7 @@ class TokenBlocklistRepository(BaseRepository):
                 "type": token_type,
                 "userId": user_id,
                 "expiresAt": expires_at,
-                "blacklistedAt": datetime.now(timezone.utc).isoformat(),
+                "blacklistedAt": datetime.now(UTC).isoformat(),
             }
         )
 

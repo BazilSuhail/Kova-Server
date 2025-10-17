@@ -19,8 +19,9 @@ from .config import Settings
 from .core.exceptions import AppError
 from .core.logging import configure_logging
 from .core.responses import api_response
+from .core.telemetry import capture_exception, init_sentry
 from .db import connect_mongo, init_db
-from .extensions import init_cors, init_jwt
+from .extensions import init_cors, init_jwt, init_limiter
 from .services import EXTENSION_KEY, build_services
 
 if t.TYPE_CHECKING:
@@ -42,11 +43,12 @@ def create_app(
             unreachable — the same startup contract as the legacy factory.
 
     Returns:
-        A fully configured app with all 31 endpoints registered.
+        A fully configured app with all 41 endpoints registered.
     """
     if settings is None:
         settings = Settings.from_env()
     configure_logging(settings.log_level)
+    init_sentry(settings)
     _reject_insecure_config(settings)
 
     app = Flask(__name__)
@@ -62,6 +64,7 @@ def create_app(
 
     init_jwt(app, settings)
     init_cors(app, settings)
+    init_limiter(app, settings)
     _register_request_context(app)
     _register_security_headers(app)
     _register_error_handlers(app)
@@ -163,10 +166,15 @@ def _register_error_handlers(app: Flask) -> None:
                 # Oversized upload (MAX_CONTENT_LENGTH) → JSON, like the rest
                 # of the API, instead of Flask's default HTML error page.
                 return api_response({"message": "Request payload too large"}, 413)
+            if error.code == 429:
+                # Rate limit breach (flask-limiter) → JSON; X-RateLimit-* and
+                # Retry-After headers are added by the limiter itself.
+                return api_response({"message": "Rate limit exceeded"}, 429)
             # Unmatched URLs/methods keep Flask's default (HTML) responses so
             # the public 404/405 contract does not change.
-            return error.get_response()
+            return t.cast(Response, error.get_response())
         logger.exception("unhandled_exception", extra={"error_type": type(error).__name__})
+        capture_exception(error)
         # Deliberately generic: the legacy ``Server error: {str(e)}`` bodies
         # leaked internals to clients.
         return api_response({"message": "Internal server error"}, 500)

@@ -60,9 +60,16 @@ class Settings:
     allow_insecure_jwt: bool = False
     # --- Sprint B: refresh-token lifetime (7 days) ---
     jwt_refresh_expires_seconds: int = 604800
+    # --- Sprint C: rate limiting + error tracking ---
+    rate_limit_enabled: bool = True
+    rate_limit_default: str = "600 per minute"
+    rate_limit_auth: str = "60 per minute"
+    rate_limit_storage_uri: str = "memory://"
+    sentry_dsn: str | None = None
+    sentry_traces_sample_rate: float = 0.0
 
     @classmethod
-    def from_env(cls) -> "Settings":
+    def from_env(cls) -> Settings:
         """Load ``.env`` then read settings, preferring ``ZENFLOW_*`` names."""
         load_dotenv()
         return cls(
@@ -89,10 +96,28 @@ class Settings:
                 _env("ZENFLOW_JWT_REFRESH_EXPIRES_SECONDS", default="604800")
                 or "604800"
             ),
+            rate_limit_enabled=(
+                (_env("ZENFLOW_RATELIMIT_ENABLED", default="") or "").strip().lower()
+                not in ("0", "false", "no", "off")
+            ),
+            rate_limit_default=_env(
+                "ZENFLOW_RATELIMIT_DEFAULT", default="600 per minute"
+            )
+            or "600 per minute",
+            rate_limit_auth=_env("ZENFLOW_RATELIMIT_AUTH", default="60 per minute")
+            or "60 per minute",
+            rate_limit_storage_uri=_env(
+                "ZENFLOW_RATELIMIT_STORAGE_URI", default="memory://"
+            )
+            or "memory://",
+            sentry_dsn=_env("ZENFLOW_SENTRY_DSN", "SENTRY_DSN") or None,
+            sentry_traces_sample_rate=float(
+                _env("ZENFLOW_SENTRY_TRACES_SAMPLE_RATE", default="0") or "0"
+            ),
         )
 
     @classmethod
-    def for_testing(cls) -> "Settings":
+    def for_testing(cls) -> Settings:
         """Deterministic settings for the test suite (no ``.env`` read)."""
         return cls(
             env="test",
