@@ -54,6 +54,9 @@ accept optional `page`/`limit` (max 100) — bare array without them, paged
 | Health | [sections/09-health.md](sections/09-health.md) | 2 |
 | Weekly Recap | [sections/10-weekly-recap.md](sections/10-weekly-recap.md) | 1 |
 
+**Cross-cutting:** [🤖 AI flows — voice, NLP & summaries](ai-flows.md)
+(pipelines, provider config, per-flow failure statuses)
+
 ➡️ Open work items: **[TODO.md](TODO.md)**
 
 ---

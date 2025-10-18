@@ -1,18 +1,23 @@
-"""Groq chat-completions client that breaks a task description into sub-tasks."""
+"""Groq chat-completions client that breaks a task description into sub-tasks.
+
+Transport lives in :mod:`.groq_client`.  The prompt promises 3–8 ordered items;
+a model that over-delivers is truncated to the first 8 (already in logical
+order) rather than failing a usable response.  Under-delivery or a non-array
+answer raises ``ValueError`` → the subtask service answers 502.
+"""
 from __future__ import annotations
 
 import json
 import logging
 from typing import Any
 
-import requests
-from flask import current_app
-
+from .groq_client import chat_completion
 from .llm_prompts import SUBTASKS_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+_MIN_SUBTASKS = 3
+_MAX_SUBTASKS = 8
 
 
 def generate_subtasks_from_description(task_description: str) -> list[str]:
@@ -21,37 +26,30 @@ def generate_subtasks_from_description(task_description: str) -> list[str]:
     Renamed from ``make_subTasks_from_tasks_description`` (snake_case).
 
     Raises:
-        ValueError: on transport failure, a non-array response, or an
-            out-of-range item count — callers decide the HTTP status.
+        AIConfigError: no GROQ_API_KEY configured (callers answer 503).
+        ValueError: on transport failure, a non-array response, or fewer than
+            3 items — callers decide the HTTP status.
     """
-    groq_api_key = current_app.config["GROQ_API_KEY"]
-    groq_llm_url = current_app.config.get("GROQ_LLM_URL", _DEFAULT_GROQ_URL)
-
-    payload: dict[str, Any] = {
-        "model": "llama3-70b-8192",
-        "messages": [
-            {"role": "system", "content": SUBTASKS_SYSTEM_PROMPT},
-            {"role": "user", "content": task_description},
-        ],
-        "max_tokens": 500,
-        "temperature": 0.3,
-    }
-    headers = {"Authorization": f"Bearer {groq_api_key}", "Content-Type": "application/json"}
-
+    content = chat_completion(
+        system_prompt=SUBTASKS_SYSTEM_PROMPT,
+        user_content=task_description,
+        max_tokens=500,
+        temperature=0.3,
+    )
     try:
-        res = requests.post(groq_llm_url, json=payload, headers=headers, timeout=60)
-        res.raise_for_status()
-        content = res.json()["choices"][0]["message"]["content"]
         subtasks: Any = json.loads(content)
-    except requests.exceptions.RequestException as exc:
-        raise ValueError(f"API request failed: {str(exc)}") from exc
-    except (KeyError, json.JSONDecodeError) as exc:
+    except json.JSONDecodeError as exc:
         raise ValueError(f"Failed to parse LLM response: {str(exc)}") from exc
 
     if not isinstance(subtasks, list) or not all(isinstance(item, str) for item in subtasks):
         raise ValueError("LLM response is not a valid list of sub-tasks")
-    if not (3 <= len(subtasks) <= 20):
+    if len(subtasks) < _MIN_SUBTASKS:
         raise ValueError("Sub-tasks must contain between 3 and 8 items")
+    if len(subtasks) > _MAX_SUBTASKS:
+        logger.warning(
+            "llm_subtasks_truncated", extra={"received": len(subtasks)}
+        )
+        subtasks = subtasks[:_MAX_SUBTASKS]
 
     logger.debug("llm_subtasks_generated", extra={"count": len(subtasks)})
     return subtasks

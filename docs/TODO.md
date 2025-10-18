@@ -54,12 +54,30 @@ Work list generated from the API analysis of `app/` + `run.py`.
 - [x] Coverage gate: `--cov-fail-under=85` in `pytest.ini` (current **88%**)
 - [x] Test suite: **99 passing**
 
+## 🤖 Sprint D — AI Features (done)
+
+- [x] Fixed **hard-coded decommissioned Groq model** (`llama3-70b-8192` → configurable
+      `ZENFLOW_GROQ_MODEL`, default `llama-3.3-70b-versatile`) — all three AI flows were
+      failing against live Groq
+- [x] Shared Groq transport (`app/utils/groq_client.py`) — one place for URL, model,
+      timeout (`ZENFLOW_LLM_TIMEOUT_SECONDS`), key guard, and response envelope
+- [x] Missing provider key → **503** `{"message": "AI provider is not configured"}`
+      on all AI flows (was a confusing upstream 401 reported as client error)
+- [x] **Subtask LLM failures now 502** `{"message": "Subtask generation failed"}`
+      (tracked issue closed — was wrongly 404; task-not-found stays 404)
+- [x] Subtask over-delivery (>8 items) truncated to the promised 3–8 instead of stored raw
+- [x] Task-field type validation (a hallucinated non-string field can no longer be persisted)
+- [x] Legacy status contracts preserved everywhere else: NLP → 400, voice/summary → 500
+- [x] AI flow reference doc → [docs/ai-flows.md](ai-flows.md)
+- [x] Test suite: **115 passing**; coverage **92%**
+
 ## 📝 Documentation TODOs
 
 - [ ] Add copy-paste `curl` example to every single endpoint (currently per-section only)
 - [ ] Add real example responses captured from a live server run
 - [ ] Generate an OpenAPI/Swagger spec (`swagger.json`) from these docs
-- [ ] Document utility/LLM endpoints flow (AssemblyAI + Groq: voice → transcript → task)
+- [x] Document utility/LLM endpoints flow (AssemblyAI + Groq: voice → transcript → task)
+      → [docs/ai-flows.md](ai-flows.md)
 - [ ] Add a "Postman collection" export
 - [x] Update root `README.md` — rewritten in the production refactor (full endpoint table)
 
@@ -85,8 +103,11 @@ Still open:
 - [ ] **`summaries` create still returns an unpersisted `task` suggestion** (legacy
       response kept as-is) — clients can persist it via the new
       `POST /api/summaries/<id>/convert-to-tasks`.
-- [ ] Subtask **LLM parse failures return 404** (legacy mapped every `ValueError` to 404);
-      should become 400/502 — needs a client-aware decision.
+- [x] Subtask **LLM parse failures returned 404** (legacy mapped every `ValueError` to
+      404) → **fixed in Sprint D**: they now answer `502` with a stable message;
+      task-not-found still returns `404`.
+- [ ] **Corrupt/unreadable PDF still answers 500** on `POST /api/summaries/create`
+      (legacy contract) — could become `400` with a client-aware decision.
 
 ## 🔮 Feature/API TODOs
 

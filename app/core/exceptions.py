@@ -46,3 +46,20 @@ class UnsupportedMediaTypeError(AppError):
     """Endpoint received a content type it does not accept (legacy 415 paths)."""
 
     status_code = 415
+
+
+class AIConfigError(AppError):
+    """An AI provider (Groq/AssemblyAI) has no API key configured.
+
+    This is server misconfiguration, not client input — every AI flow answers
+    503 with a stable message instead of forwarding ``Bearer None`` upstream and
+    reporting the resulting 401 as the caller's fault.
+    """
+
+    status_code = 503
+
+
+class AIProviderError(AppError):
+    """The AI provider answered, but the response was unusable (502)."""
+
+    status_code = 502

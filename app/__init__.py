@@ -58,6 +58,8 @@ def create_app(
     app.config["FLASK_ENV"] = settings.env
     app.config["GROQ_API_KEY"] = settings.groq_api_key
     app.config["GROQ_LLM_URL"] = settings.groq_llm_url
+    app.config["GROQ_MODEL"] = settings.groq_model
+    app.config["LLM_TIMEOUT_SECONDS"] = settings.llm_timeout_seconds
     app.config["ASSEMBLYAI_API_KEY"] = settings.assemblyai_api_key
     # Reject oversized uploads (voice/PDF) before they are buffered into memory.
     app.config["MAX_CONTENT_LENGTH"] = settings.max_upload_mb * 1024 * 1024

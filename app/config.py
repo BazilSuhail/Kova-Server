@@ -67,6 +67,9 @@ class Settings:
     rate_limit_storage_uri: str = "memory://"
     sentry_dsn: str | None = None
     sentry_traces_sample_rate: float = 0.0
+    # --- Sprint D: AI provider knobs ---
+    groq_model: str = "llama-3.3-70b-versatile"
+    llm_timeout_seconds: int = 60
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -113,6 +116,11 @@ class Settings:
             sentry_dsn=_env("ZENFLOW_SENTRY_DSN", "SENTRY_DSN") or None,
             sentry_traces_sample_rate=float(
                 _env("ZENFLOW_SENTRY_TRACES_SAMPLE_RATE", default="0") or "0"
+            ),
+            groq_model=_env("ZENFLOW_GROQ_MODEL", default="llama-3.3-70b-versatile")
+            or "llama-3.3-70b-versatile",
+            llm_timeout_seconds=int(
+                _env("ZENFLOW_LLM_TIMEOUT_SECONDS", default="60") or "60"
             ),
         )
 

@@ -5,14 +5,17 @@ array — the API never creates individual subtask rows.
 """
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from bson import ObjectId
 
-from ..core.exceptions import NotFoundError
+from ..core.exceptions import AIProviderError, NotFoundError
 from ..repositories.subtask_repository import SubtaskRepository
 from ..repositories.task_repository import TaskRepository
 from ..utils.sub_tasks_utils import generate_subtasks_from_description
+
+logger = logging.getLogger(__name__)
 
 # Whitelist for partial updates.
 _UPDATABLE_FIELDS = ("title", "done", "order")
@@ -35,9 +38,14 @@ class SubtaskService:
                 task.get("description", "")
             )
         except ValueError as exc:
-            # Legacy route mapped *every* ValueError to 404 (LLM parse failures
-            # included). Preserved as-is; see docs/TODO.md for the follow-up.
-            raise NotFoundError(str(exc)) from exc
+            # Tracked fix (docs/TODO.md): an LLM/transport failure is an
+            # upstream problem, not "task not found" — the legacy route mapped
+            # every ValueError to 404. Missing tasks still 404 above; a missing
+            # API key surfaces from the generator as AIConfigError → 503.
+            logger.exception(
+                "subtask_generation_failed", extra={"task_id": task_id}
+            )
+            raise AIProviderError("Subtask generation failed") from exc
         document = {
             "subtaskId": str(ObjectId()),
             "taskId": task_id,

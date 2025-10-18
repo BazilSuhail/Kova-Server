@@ -8,6 +8,8 @@ from typing import Any, BinaryIO
 import requests
 from flask import current_app
 
+from ..core.exceptions import AIConfigError
+
 logger = logging.getLogger(__name__)
 
 _ASSEMBLYAI_BASE_URL = "https://api.assemblyai.com/v2"
@@ -18,7 +20,13 @@ _MAX_POLL_ATTEMPTS = 100
 
 
 def _headers() -> dict[str, str]:
-    return {"authorization": current_app.config["ASSEMBLYAI_API_KEY"]}
+    api_key = current_app.config.get("ASSEMBLYAI_API_KEY")
+    if not api_key:
+        # Server misconfiguration → 503, not an upstream 401 dressed up as a
+        # client error (or a bare TypeError from a None header).
+        logger.error("assemblyai_not_configured")
+        raise AIConfigError("AI provider is not configured")
+    return {"authorization": api_key}
 
 
 def upload_audio(file_stream: BinaryIO | Any) -> str:

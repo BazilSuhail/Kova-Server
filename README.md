@@ -135,3 +135,6 @@ Tests run against an in-memory Mongo stand-in — no database or network needed.
 - **Per-IP rate limiting** (default 600/min; auth routes 60/min — `ZENFLOW_RATELIMIT_*`)
   returns JSON `429`; health probes are exempt. Sentry reports 500s when
   `ZENFLOW_SENTRY_DSN` is set (disabled otherwise).
+- **AI flows** (voice / natural-language / summaries) need `ZENFLOW_GROQ_API_KEY`
+  (and `ZENFLOW_ASSEMBLYAI_API_KEY` for voice); without them they answer `503`.
+  Model and timeout are configurable — see [docs/ai-flows.md](docs/ai-flows.md).
