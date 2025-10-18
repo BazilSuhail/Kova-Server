@@ -14,8 +14,11 @@ _UPDATABLE_FIELDS = ("read", "title", "message", "triggerTime")
 
 
 class NotificationService:
-    def __init__(self, notifications: NotificationRepository) -> None:
+    def __init__(
+        self, notifications: NotificationRepository, tombstones: object | None = None
+    ) -> None:
         self._notifications = notifications
+        self._tombstones = tombstones
 
     def create(self, user_id: str, data: dict[str, Any]) -> dict[str, Any]:
         """Create an unread notification (route validated title/message)."""
@@ -55,7 +58,12 @@ class NotificationService:
         return self._notifications.find_by_id_for_user(notification_id, user_id)
 
     def delete(self, notification_id: str, user_id: str) -> bool:
-        return self._notifications.delete_for_user(notification_id, user_id) > 0
+        deleted = self._notifications.delete_for_user(notification_id, user_id) > 0
+        if deleted and self._tombstones is not None:
+            self._tombstones.record(  # type: ignore[attr-defined]
+                user_id, "notifications", notification_id, datetime.now(UTC).isoformat()
+            )
+        return deleted
 
     def update(self, notification_id: str, user_id: str, data: dict[str, Any]) -> bool:
         """Partial update; False covers both "missing" and "no change made"."""

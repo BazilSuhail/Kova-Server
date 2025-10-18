@@ -27,6 +27,10 @@ class TaskRepository(BaseRepository):
         """Resolve a planner's task-id array into full task documents."""
         return self.find_many({"taskId": {"$in": task_ids}})
 
+    def find_since(self, user_id: str, since: str | None) -> list[dict[str, Any]]:
+        """Delta query for offline sync (feature 14)."""
+        return self.find_updated_since(user_id, since)
+
     def find_due_on(self, user_id: str, date_prefix: str) -> list[dict[str, Any]]:
         """Tasks due on a day.
 

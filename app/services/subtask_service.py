@@ -6,6 +6,7 @@ array — the API never creates individual subtask rows.
 from __future__ import annotations
 
 import logging
+from datetime import UTC, datetime
 from typing import Any
 
 from bson import ObjectId
@@ -22,9 +23,15 @@ _UPDATABLE_FIELDS = ("title", "done", "order")
 
 
 class SubtaskService:
-    def __init__(self, subtasks: SubtaskRepository, tasks: TaskRepository) -> None:
+    def __init__(
+        self,
+        subtasks: SubtaskRepository,
+        tasks: TaskRepository,
+        tombstones: object | None = None,
+    ) -> None:
         self._subtasks = subtasks
         self._tasks = tasks
+        self._tombstones = tombstones
 
     def create(self, data: dict[str, Any], user_id: str, task_id: str) -> dict[str, Any]:
         """Generate subtasks for an owned task from its description."""
@@ -85,8 +92,16 @@ class SubtaskService:
         """Delete *all* subtasks of an owned task; returns how many went away."""
         if self._tasks.find_for_user(task_id, user_id) is None:
             raise NotFoundError("Task not found")
+        removed_ids = [
+            subtask["subtaskId"] for subtask in self._subtasks.find_by_task(task_id)
+        ]
         deleted = self._subtasks.delete_by_task(task_id)
         self._tasks.set_has_subtasks(task_id, False)
+        if self._tombstones is not None:
+            for subtask_id in removed_ids:
+                self._tombstones.record(  # type: ignore[attr-defined]
+                    user_id, "subtasks", subtask_id, datetime.now(UTC).isoformat()
+                )
         return deleted
 
     def delete_one(self, subtask_id: str, user_id: str) -> bool:
@@ -104,4 +119,8 @@ class SubtaskService:
             return False
         if not self._subtasks.find_by_task(subtask["taskId"]):
             self._tasks.set_has_subtasks(subtask["taskId"], False)
+        if self._tombstones is not None:
+            self._tombstones.record(  # type: ignore[attr-defined]
+                user_id, "subtasks", subtask_id, datetime.now(UTC).isoformat()
+            )
         return True

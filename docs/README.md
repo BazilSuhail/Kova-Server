@@ -28,7 +28,7 @@ Stack: **Flask + Flask-JWT-Extended + MongoDB (PyMongo) + Waitress**, served via
 | 10 | [Weekly Recap](sections/10-weekly-recap.md) | `weekly_recap_bp` | `/api/weekly-recap` | 1 | `app/api/weekly_recap.py` |
 | | **TOTAL** | | | **41** | |
 
-**By method:** POST 12 · GET 13 · PUT 10 · DELETE 6 → **41 active endpoints**
+**By method:** POST 12 · GET 13 · PUT 9 · DELETE 7 → **41 active endpoints**
 (commented-out legacy routes in `planner.py` are not counted)
 
 **By auth:** 5 public (signup/login/refresh/health/health-ready) · 36 require JWT
@@ -56,6 +56,9 @@ accept optional `page`/`limit` (max 100) — bare array without them, paged
 
 **Cross-cutting:** [🤖 AI flows — voice, NLP & summaries](ai-flows.md)
 (pipelines, provider config, per-flow failure statuses)
+
+**Client-facing:** [📱 Client guide — build the app](client.md)
+(9 screens, every option → API, request/response examples for all 41 endpoints)
 
 ➡️ Open work items: **[TODO.md](TODO.md)**
 

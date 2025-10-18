@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import builtins
+from datetime import UTC, datetime
 from typing import Any
 
 from bson import ObjectId
@@ -15,9 +16,15 @@ _UPDATABLE_FIELDS = ("date", "focusTasks", "tasks", "reflection")
 
 
 class PlannerService:
-    def __init__(self, planners: PlannerRepository, tasks: TaskRepository) -> None:
+    def __init__(
+        self,
+        planners: PlannerRepository,
+        tasks: TaskRepository,
+        tombstones: object | None = None,
+    ) -> None:
         self._planners = planners
         self._tasks = tasks
+        self._tombstones = tombstones
 
     def create(self, data: dict[str, Any], user_id: str) -> dict[str, Any]:
         """Create a day plan (route already validated ``date`` presence)."""
@@ -90,4 +97,9 @@ class PlannerService:
         return True
 
     def delete(self, planner_id: str, user_id: str) -> bool:
-        return self._planners.delete(planner_id, user_id) > 0
+        deleted = self._planners.delete(planner_id, user_id) > 0
+        if deleted and self._tombstones is not None:
+            self._tombstones.record(  # type: ignore[attr-defined]
+                user_id, "planner", planner_id, datetime.now(UTC).isoformat()
+            )
+        return deleted

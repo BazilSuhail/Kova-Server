@@ -11,7 +11,7 @@ import logging
 from typing import Any
 
 from .groq_client import chat_completion
-from .llm_prompts import TASK_FIELDS_SYSTEM_PROMPT
+from .llm_prompts import TASK_FIELDS_SYSTEM_PROMPT, TITLE_REWRITE_SYSTEM_PROMPT
 
 logger = logging.getLogger(__name__)
 
@@ -52,3 +52,27 @@ def generate_task_fields_from_llm(transcript: str) -> dict[str, Any]:
 
     logger.debug("llm_task_fields_extracted", extra={"fields": list(result)})
     return result
+
+
+def generate_title_from_llm(raw_title: str) -> str:
+    """Rewrite a vague task title into a clear one via Groq (feature 19).
+
+    Raises:
+        AIConfigError: no GROQ_API_KEY configured (callers answer 503).
+        ValueError: on transport failure or a malformed response.
+    """
+    content = chat_completion(
+        system_prompt=TITLE_REWRITE_SYSTEM_PROMPT,
+        user_content=raw_title,
+        max_tokens=60,
+        temperature=0.3,
+        response_format={"type": "json_object"},
+    )
+    try:
+        result: Any = json.loads(content)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Failed to parse LLM response: {str(exc)}") from exc
+    title = result.get("title") if isinstance(result, dict) else None
+    if not isinstance(title, str) or not title.strip():
+        raise ValueError("LLM response missing a title")
+    return title.strip()

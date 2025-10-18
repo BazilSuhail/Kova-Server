@@ -19,6 +19,7 @@ from .config import Settings
 from .core.exceptions import AppError
 from .core.logging import configure_logging
 from .core.responses import api_response
+from .core.scheduler import init_scheduler
 from .core.telemetry import capture_exception, init_sentry
 from .db import connect_mongo, init_db
 from .extensions import init_compression, init_cors, init_jwt, init_limiter
@@ -43,7 +44,7 @@ def create_app(
             unreachable — the same startup contract as the legacy factory.
 
     Returns:
-        A fully configured app with all 41 endpoints registered.
+        A fully configured app with every route module registered.
     """
     if settings is None:
         settings = Settings.from_env()
@@ -61,6 +62,14 @@ def create_app(
     app.config["GROQ_MODEL"] = settings.groq_model
     app.config["LLM_TIMEOUT_SECONDS"] = settings.llm_timeout_seconds
     app.config["ASSEMBLYAI_API_KEY"] = settings.assemblyai_api_key
+    # --- Life-assistant integration knobs (Sprint F) ---
+    app.config["AUTO_CATEGORIZE"] = settings.auto_categorize
+    app.config["OCR_API_KEY"] = settings.ocr_api_key
+    app.config["OCR_URL"] = settings.ocr_url
+    app.config["OCR_TIMEOUT_SECONDS"] = settings.ocr_timeout_seconds
+    app.config["PUSH_ENABLED"] = settings.push_enabled
+    app.config["PUSH_URL"] = settings.push_url
+    app.config["PUSH_ACCESS_TOKEN"] = settings.push_access_token
     # Reject oversized uploads (voice/PDF) before they are buffered into memory.
     app.config["MAX_CONTENT_LENGTH"] = settings.max_upload_mb * 1024 * 1024
 
@@ -77,6 +86,7 @@ def create_app(
     app.extensions[EXTENSION_KEY] = build_services(db)
 
     register_blueprints(app)
+    init_scheduler(app, settings)
     logger.info(
         "application_ready",
         extra={"env": settings.env, "blueprints": len(app.blueprints)},

@@ -16,6 +16,8 @@ from dotenv import load_dotenv
 DEFAULT_JWT_SECRET = "kasnkdjnaskjdfnskdjf6454sdf"
 DEFAULT_MONGO_URI = "mongodb://localhost:27017/zenflow"
 DEFAULT_GROQ_LLM_URL = "https://api.groq.com/openai/v1/chat/completions"
+DEFAULT_OCR_URL = "https://api.ocr.space/parse/image"
+DEFAULT_PUSH_URL = "https://exp.host/--/api/v2/push/send"
 
 _TRUE_VALUES = frozenset({"1", "true", "yes", "on"})
 
@@ -72,6 +74,19 @@ class Settings:
     llm_timeout_seconds: int = 60
     # --- Sprint E: performance ---
     compress_enabled: bool = True
+    # --- Sprint F: life-assistant features ---
+    # Local keyword categoriser runs on every manual create (no network, no key).
+    auto_categorize: bool = True
+    ocr_api_key: str | None = None
+    ocr_url: str = DEFAULT_OCR_URL
+    ocr_timeout_seconds: int = 60
+    # Expo push delivery for scheduled reminders/nudges.
+    push_enabled: bool = True
+    push_url: str = DEFAULT_PUSH_URL
+    push_access_token: str | None = None
+    # In-process APScheduler that fires due reminders. Off in tests.
+    scheduler_enabled: bool = True
+    scheduler_interval_seconds: int = 30
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -128,6 +143,28 @@ class Settings:
                 (_env("ZENFLOW_COMPRESS_ENABLED", default="") or "").strip().lower()
                 not in ("0", "false", "no", "off")
             ),
+            auto_categorize=(
+                (_env("ZENFLOW_AUTO_CATEGORIZE", default="") or "").strip().lower()
+                not in ("0", "false", "no", "off")
+            ),
+            ocr_api_key=_env("ZENFLOW_OCR_API_KEY", "OCR_API_KEY"),
+            ocr_url=_env("ZENFLOW_OCR_URL", default=DEFAULT_OCR_URL) or DEFAULT_OCR_URL,
+            ocr_timeout_seconds=int(
+                _env("ZENFLOW_OCR_TIMEOUT_SECONDS", default="60") or "60"
+            ),
+            push_enabled=(
+                (_env("ZENFLOW_PUSH_ENABLED", default="") or "").strip().lower()
+                not in ("0", "false", "no", "off")
+            ),
+            push_url=_env("ZENFLOW_PUSH_URL", default=DEFAULT_PUSH_URL) or DEFAULT_PUSH_URL,
+            push_access_token=_env("ZENFLOW_PUSH_ACCESS_TOKEN"),
+            scheduler_enabled=(
+                (_env("ZENFLOW_SCHEDULER_ENABLED", default="") or "").strip().lower()
+                not in ("0", "false", "no", "off")
+            ),
+            scheduler_interval_seconds=int(
+                _env("ZENFLOW_SCHEDULER_INTERVAL_SECONDS", default="30") or "30"
+            ),
         )
 
     @classmethod
@@ -142,6 +179,9 @@ class Settings:
             assemblyai_api_key=None,
             groq_api_key=None,
             groq_llm_url=DEFAULT_GROQ_LLM_URL,
+            # Tests must never start a background scheduler or hit push providers.
+            scheduler_enabled=False,
+            push_enabled=False,
         )
 
     @property

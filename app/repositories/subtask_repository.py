@@ -19,6 +19,15 @@ class SubtaskRepository(BaseRepository):
     def find_by_task(self, task_id: str) -> list[dict[str, Any]]:
         return self.find_many({"taskId": task_id})
 
+    def find_since_by_tasks(
+        self, task_ids: list[str], since: str | None
+    ) -> list[dict[str, Any]]:
+        """Delta query for offline sync — subtasks have no ``userId`` of their own."""
+        query: dict[str, Any] = {"taskId": {"$in": task_ids}}
+        if since:
+            query["updatedAt"] = {"$gt": since}
+        return self.find_many(query)
+
     def find_by_subtask_id(self, subtask_id: str) -> dict[str, Any] | None:
         return self.find_one({"subtaskId": subtask_id})
 

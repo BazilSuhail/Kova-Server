@@ -6,11 +6,17 @@ the test suite can substitute one fake collection instead of Mongo itself.
 """
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
 from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.results import DeleteResult, UpdateResult
+
+
+def utcnow_iso() -> str:
+    """Single timestamp source so ``createdAt``/``updatedAt`` stay comparable."""
+    return datetime.now(UTC).isoformat()
 
 
 class BaseRepository:
@@ -25,7 +31,12 @@ class BaseRepository:
         return self._collection
 
     def insert(self, document: dict[str, Any]) -> dict[str, Any]:
-        """Insert ``document`` and return it unchanged (ids are app-generated)."""
+        """Insert ``document`` and return it unchanged (ids are app-generated).
+
+        ``updatedAt`` is stamped here (falling back to ``createdAt``) so every
+        stored row is delta-sync visible without each service remembering to.
+        """
+        document.setdefault("updatedAt", document.get("createdAt") or utcnow_iso())
         self._collection.insert_one(document)
         return document
 
@@ -69,8 +80,29 @@ class BaseRepository:
         return list(cursor)
 
     def update(self, query: dict[str, Any], fields: dict[str, Any]) -> UpdateResult:
-        """Apply a ``$set``; ``modified_count`` distinguishes "matched" from "changed"."""
-        return self._collection.update_one(query, {"$set": fields})
+        """Apply a ``$set``; ``modified_count`` distinguishes "matched" from "changed".
+
+        ``updatedAt`` is stamped **only when something actually changed** so the
+        legacy "no-op update looks like a miss" contract is preserved while the
+        document still carries a delta-sync timestamp.
+        """
+        result = self._collection.update_one(query, {"$set": fields})
+        if result.modified_count:
+            self._collection.update_one(query, {"$set": {"updatedAt": utcnow_iso()}})
+        return result
+
+    def find_updated_since(
+        self,
+        user_id: str,
+        since: str | None,
+        *,
+        sort: tuple[str, int] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Owner-scoped delta query for offline sync (``updatedAt`` > ``since``)."""
+        query: dict[str, Any] = {"userId": user_id}
+        if since:
+            query["updatedAt"] = {"$gt": since}
+        return self.find_many(query, sort=sort)
 
     def delete_one(self, query: dict[str, Any]) -> DeleteResult:
         return self._collection.delete_one(query)

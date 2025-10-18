@@ -9,7 +9,10 @@ from bson import ObjectId
 from ..core.query import PageParams, page_payload
 from ..repositories.summary_repository import SummaryRepository
 from ..repositories.task_repository import TaskRepository
-from ..utils.summary_utils import generate_summary_from_llm
+from ..utils.summary_utils import (
+    generate_notes_summary_from_llm,
+    generate_summary_from_llm,
+)
 
 # Whitelist for partial updates.
 _UPDATABLE_FIELDS = ("sourceType", "originalFileName", "summaryBullets")
@@ -17,10 +20,14 @@ _UPDATABLE_FIELDS = ("sourceType", "originalFileName", "summaryBullets")
 
 class SummaryService:
     def __init__(
-        self, summaries: SummaryRepository, tasks: TaskRepository
+        self,
+        summaries: SummaryRepository,
+        tasks: TaskRepository,
+        tombstones: object | None = None,
     ) -> None:
         self._summaries = summaries
         self._tasks = tasks
+        self._tombstones = tombstones
 
     def create(
         self, user_id: str, extracted_text: str, original_filename: str | None
@@ -54,6 +61,27 @@ class SummaryService:
         }
         self._summaries.insert(summary)
         return {"summary": summary, "task": task}
+
+    def create_from_text(
+        self, user_id: str, text: str, title: str | None = None
+    ) -> dict[str, Any]:
+        """Summarize raw note text into 3-5 bullets (feature 8 — notes path).
+
+        Unlike the PDF flow this never fabricates a task suggestion; notes are
+        summarized standalone (persist a task later via convert-to-tasks, which
+        works on any summary).
+        """
+        summary_bullets = generate_notes_summary_from_llm(text)
+        summary = {
+            "summaryId": str(ObjectId()),
+            "userId": user_id,
+            "sourceType": "note",
+            "originalFileName": title or "",
+            "summaryBullets": summary_bullets,
+            "createdAt": datetime.now(UTC).isoformat(),
+        }
+        self._summaries.insert(summary)
+        return {"summary": summary}
 
     def list(
         self, user_id: str, *, page: PageParams | None = None
@@ -97,4 +125,9 @@ class SummaryService:
         return self._summaries.update_fields(summary_id, user_id, fields) > 0
 
     def delete(self, summary_id: str, user_id: str) -> bool:
-        return self._summaries.delete(summary_id, user_id) > 0
+        deleted = self._summaries.delete(summary_id, user_id) > 0
+        if deleted and self._tombstones is not None:
+            self._tombstones.record(  # type: ignore[attr-defined]
+                user_id, "summaries", summary_id, datetime.now(UTC).isoformat()
+            )
+        return deleted

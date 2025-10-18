@@ -60,4 +60,27 @@ def create_indexes(db: Database) -> None:
     # Logout revocation: unique jti for O(1) checks, TTL to self-purge dead rows.
     db.token_blocklist.create_index([("jti", 1)], unique=True)
     db.token_blocklist.create_index([("expiresAt", 1)], expireAfterSeconds=0)
+    # --- Life-assistant collections (Sprint F) ---
+    # Mood journal: newest-first feed + trend range scans per user.
+    db.mood_entries.create_index([("moodId", 1)], unique=True)
+    db.mood_entries.create_index([("userId", 1), ("loggedAt", -1)])
+    # Daily reflections: one lookup per user/day.
+    db.reflections.create_index([("reflectionId", 1)], unique=True)
+    db.reflections.create_index([("userId", 1), ("date", 1)])
+    # Push devices: a token identifies one device (moved, never duplicated).
+    db.push_devices.create_index([("deviceId", 1)], unique=True)
+    db.push_devices.create_index([("expoPushToken", 1)], unique=True)
+    db.push_devices.create_index([("userId", 1)])
+    # Reminders: due-scan by status+fireAt, owner listing.
+    db.scheduled_reminders.create_index([("reminderId", 1)], unique=True)
+    db.scheduled_reminders.create_index([("userId", 1)])
+    db.scheduled_reminders.create_index([("status", 1), ("fireAt", 1)])
+    # Offline sync: tombstones record deletions so clients can prune local rows.
+    db.tombstones.create_index([("userId", 1), ("deletedAt", 1)])
+    # Delta sync scans: (owner, updatedAt) per synced collection.
+    db.tasks.create_index([("userId", 1), ("updatedAt", 1)])
+    db.planner.create_index([("userId", 1), ("updatedAt", 1)])
+    db.summaries.create_index([("userId", 1), ("updatedAt", 1)])
+    db.notifications.create_index([("userId", 1), ("updatedAt", 1)])
+    db.subtasks.create_index([("taskId", 1), ("updatedAt", 1)])
     logger.info("mongodb indexes ensured")

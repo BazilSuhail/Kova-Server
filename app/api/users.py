@@ -32,3 +32,20 @@ def delete_profile() -> Response:
     """Delete the caller's account document."""
     get_services().users.delete_profile(get_jwt_identity())
     return api_response({"message": "User deleted"}, 200)
+
+
+@users_bp.route("/profile/settings", methods=["GET"])
+@jwt_required()
+def get_settings() -> Response:
+    """Return the caller's customisation settings (feature 15)."""
+    return api_response(get_services().users.get_settings(get_jwt_identity()), 200)
+
+
+@users_bp.route("/profile/settings", methods=["PUT"])
+@jwt_required()
+def update_settings() -> Response:
+    """Merge theme/fontSize/layout/notificationStyle into preferences."""
+    updated = get_services().users.update_settings(
+        get_jwt_identity(), request.get_json(silent=True) or {}
+    )
+    return api_response(updated, 200)

@@ -6,6 +6,7 @@ from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from ..core.query import parse_page_params
 from ..core.responses import api_response
+from ..core.validation import require_fields
 from ..services import get_services
 from ..utils.pdf_to_text import extract_pdf_text
 
@@ -25,6 +26,17 @@ def create_summary() -> Response:
     # Text extraction stays at the edge: it is I/O on the uploaded bytes.
     extracted_text = extract_pdf_text(file)
     result = get_services().summaries.create(user_id, extracted_text, file.filename)
+    return api_response(result, 201)
+
+
+@summaries_bp.route("/create-from-text", methods=["POST"])
+@jwt_required()
+def create_summary_from_text() -> Response:
+    """Summarize raw note text into 3-5 bullets (feature 8 — notes path)."""
+    data = require_fields(request.get_json(), "text", message="text is required")
+    result = get_services().summaries.create_from_text(
+        get_jwt_identity(), data["text"], data.get("title")
+    )
     return api_response(result, 201)
 
 

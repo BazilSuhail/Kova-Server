@@ -9,6 +9,16 @@ from ..repositories.user_repository import UserRepository
 # Fields a client may change through the API — anything else is dropped.
 _UPDATABLE_FIELDS = ("name", "email", "profilePicture", "preferences")
 
+# Customisation keys accepted by the dedicated settings endpoint (feature 15).
+_SETTING_FIELDS = (
+    "theme",
+    "fontSize",
+    "layout",
+    "notificationStyle",
+    "notificationsEnabled",
+    "language",
+)
+
 
 class UserService:
     def __init__(self, users: UserRepository) -> None:
@@ -44,3 +54,18 @@ class UserService:
         """
         if self._users.delete_by_user_id(user_id) == 0:
             raise NotFoundError("User not found")
+
+    def get_settings(self, user_id: str) -> dict[str, Any]:
+        """Return the customisation block (feature 15)."""
+        profile = self.get_profile(user_id)
+        return dict(profile.get("preferences") or {})
+
+    def update_settings(self, user_id: str, data: dict[str, Any]) -> dict[str, Any]:
+        """Merge whitelisted settings into ``preferences`` and return the result."""
+        profile = self.get_profile(user_id)
+        preferences = dict(profile.get("preferences") or {})
+        for key, value in data.items():
+            if key in _SETTING_FIELDS:
+                preferences[key] = value
+        self._users.update_fields(user_id, {"preferences": preferences})
+        return preferences
