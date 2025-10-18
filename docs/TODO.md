@@ -71,6 +71,21 @@ Work list generated from the API analysis of `app/` + `run.py`.
 - [x] AI flow reference doc → [docs/ai-flows.md](ai-flows.md)
 - [x] Test suite: **115 passing**; coverage **92%**
 
+## 🚀 Sprint E — Performance (done)
+
+- [x] **Planner list N+1 eliminated** — one `$in` query for all planners instead of
+      one task lookup per planner (output order/dangling-id semantics unchanged)
+- [x] **Weekly recap 14 queries → 2** — one dueDate range + one planner date range
+      for the whole 7-day window instead of two lookups per day
+- [x] **Response compression** (gzip/brotli via `flask-compress`) for JSON/text ≥500 B
+      when the client sends `Accept-Encoding` — `ZENFLOW_COMPRESS_ENABLED=false` opts out
+- [x] New indexes: `tasks(userId, dueDate)`, `planner(userId, date)`,
+      `notifications(userId, createdAt)` — cover recap ranges and feed sorts
+- [x] `Server-Timing: app;dur=<ms>` header on every response (latency visibility)
+- [x] Waitress thread count configurable via `ZENFLOW_WEB_THREADS` (defaults unchanged)
+- [x] Fake-Mongo test double gained `$gt/$gte/$lt/$lte` range operators
+- [x] Test suite: **121 passing**; coverage **92%**
+
 ## 📝 Documentation TODOs
 
 - [ ] Add copy-paste `curl` example to every single endpoint (currently per-section only)

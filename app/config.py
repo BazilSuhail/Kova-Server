@@ -70,6 +70,8 @@ class Settings:
     # --- Sprint D: AI provider knobs ---
     groq_model: str = "llama-3.3-70b-versatile"
     llm_timeout_seconds: int = 60
+    # --- Sprint E: performance ---
+    compress_enabled: bool = True
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -121,6 +123,10 @@ class Settings:
             or "llama-3.3-70b-versatile",
             llm_timeout_seconds=int(
                 _env("ZENFLOW_LLM_TIMEOUT_SECONDS", default="60") or "60"
+            ),
+            compress_enabled=(
+                (_env("ZENFLOW_COMPRESS_ENABLED", default="") or "").strip().lower()
+                not in ("0", "false", "no", "off")
             ),
         )
 

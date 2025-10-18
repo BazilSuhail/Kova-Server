@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from flask import Flask, current_app
+from flask_compress import Compress
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_limiter import Limiter
@@ -74,3 +75,18 @@ def init_cors(app: Flask, settings: Settings) -> None:
     deployment breaks until an allowlist is deliberately configured.
     """
     CORS(app, origins=list(settings.cors_origins))
+
+
+def init_compression(app: Flask, settings: Settings) -> None:
+    """Gzip compressible responses (JSON/text) — typically 5-10x smaller payloads.
+
+    Only fires when the client advertises support (``Accept-Encoding``) and the
+    body clears ``COMPRESS_MIN_SIZE``; disable with ``ZENFLOW_COMPRESS_ENABLED``.
+    """
+    if not settings.compress_enabled:
+        # flask-compress 1.25 has no COMPRESS_ENABLED flag — simply not wiring
+        # the extension leaves every response uncompressed.
+        return
+    app.config["COMPRESS_LEVEL"] = 6  # zlib sweet spot (nginx's default)
+    app.config["COMPRESS_MIN_SIZE"] = 500
+    Compress(app)

@@ -138,3 +138,7 @@ Tests run against an in-memory Mongo stand-in — no database or network needed.
 - **AI flows** (voice / natural-language / summaries) need `ZENFLOW_GROQ_API_KEY`
   (and `ZENFLOW_ASSEMBLYAI_API_KEY` for voice); without them they answer `503`.
   Model and timeout are configurable — see [docs/ai-flows.md](docs/ai-flows.md).
+- **Performance:** JSON/text responses are gzipped when the client accepts it
+  (`ZENFLOW_COMPRESS_ENABLED`), every response carries `Server-Timing: app;dur=…`,
+  recap/planner reads are batched (no per-day/per-planner queries), and Waitress
+  threads are tunable via `ZENFLOW_WEB_THREADS`.

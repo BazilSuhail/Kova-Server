@@ -28,6 +28,24 @@ class WeeklyRecapService:
         """
         end_date = self._parse_end(end).date()
         start_date = end_date - timedelta(days=WEEK_DAYS - 1)
+        start_prefix = start_date.isoformat()
+        # Exclusive upper bound: the next day's prefix. Every dueDate matching
+        # any in-window day-prefix sorts below it (suffixes don't matter).
+        after_end_prefix = (end_date + timedelta(days=1)).isoformat()
+
+        # Two range queries for the whole window instead of two per day
+        # (the legacy loop issued 14 round-trips per recap).
+        due_tasks = self._tasks.find_many(
+            {
+                "userId": user_id,
+                "dueDate": {"$gte": start_prefix, "$lt": after_end_prefix},
+            }
+        )
+        planner_by_day: dict[str, dict[str, Any]] = {}
+        for entry in self._planners.find_many(
+            {"userId": user_id, "date": {"$gte": start_prefix, "$lt": after_end_prefix}}
+        ):
+            planner_by_day.setdefault((entry.get("date") or "")[:10], entry)
 
         days: list[dict[str, Any]] = []
         completed_total = 0
@@ -36,10 +54,11 @@ class WeeklyRecapService:
         while offset < WEEK_DAYS:
             day = start_date + timedelta(days=offset)
             prefix = day.isoformat()
-            tasks = self._tasks.find_due_on(user_id, prefix)
+            # Same semantics as the old per-day ``^prefix`` regex filters.
+            tasks = [t for t in due_tasks if (t.get("dueDate") or "").startswith(prefix)]
             completed = [t["title"] for t in tasks if t.get("isCompleted")]
             pending = [t["title"] for t in tasks if not t.get("isCompleted")]
-            planner = self._planners.find_by_date(user_id, prefix)
+            planner = planner_by_day.get(prefix)
             mood = "Not recorded"
             if planner is not None and planner.get("reflection"):
                 mood = planner["reflection"]

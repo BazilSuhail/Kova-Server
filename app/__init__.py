@@ -21,7 +21,7 @@ from .core.logging import configure_logging
 from .core.responses import api_response
 from .core.telemetry import capture_exception, init_sentry
 from .db import connect_mongo, init_db
-from .extensions import init_cors, init_jwt, init_limiter
+from .extensions import init_compression, init_cors, init_jwt, init_limiter
 from .services import EXTENSION_KEY, build_services
 
 if t.TYPE_CHECKING:
@@ -67,6 +67,7 @@ def create_app(
     init_jwt(app, settings)
     init_cors(app, settings)
     init_limiter(app, settings)
+    init_compression(app, settings)
     _register_request_context(app)
     _register_security_headers(app)
     _register_error_handlers(app)
@@ -136,6 +137,9 @@ def _register_request_context(app: Flask) -> None:
             else None
         )
         response.headers["X-Request-ID"] = getattr(g, "correlation_id", "")
+        if duration_ms is not None:
+            # Standard timing header so clients/proxies can see real app latency.
+            response.headers["Server-Timing"] = f"app;dur={duration_ms}"
         logger.info(
             "http_request",
             extra={

@@ -12,3 +12,4 @@ bcrypt==5.0.0
 PyPDF2==3.0.1        # PDF text extraction for POST /api/summaries/create
 waitress==3.0.2      # production WSGI server used by run.py
 sentry-sdk==2.71.0   # error tracking — active only when ZENFLOW_SENTRY_DSN is set
+flask-compress==1.25 # gzip/brotli responses — disable with ZENFLOW_COMPRESS_ENABLED

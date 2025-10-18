@@ -50,6 +50,20 @@ def _matches(document: dict[str, Any], query: dict[str, Any]) -> bool:
                         return False
                 elif operator == "$options":
                     continue  # consumed together with $regex above
+                elif operator in ("$gt", "$gte", "$lt", "$lte"):
+                    # Range checks for string fields (dueDate/date windows).
+                    # Mongo orders null and cross-type values before strings —
+                    # those never satisfy our ranges, so treat as no-match.
+                    if actual is None or type(actual) is not type(operand):
+                        return False
+                    in_range = {
+                        "$gt": actual > operand,
+                        "$gte": actual >= operand,
+                        "$lt": actual < operand,
+                        "$lte": actual <= operand,
+                    }[operator]
+                    if not in_range:
+                        return False
                 else:
                     raise NotImplementedError(f"fake mongo: unsupported operator {operator}")
         elif actual != expected:

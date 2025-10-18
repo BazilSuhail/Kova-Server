@@ -34,10 +34,22 @@ class PlannerService:
     def list(self, user_id: str) -> list[dict[str, Any]]:
         """All planners for a user, each enriched with resolved task documents."""
         planners = self._planners.find_for_user(user_id)
+        # One $in lookup for every planner instead of one query per planner
+        # (the legacy loop was an N+1). Output order still follows each
+        # planner's own `tasks` array; dangling ids are dropped, as before.
+        wanted = {
+            task_id for planner in planners for task_id in planner.get("tasks", [])
+        }
+        tasks_by_id = {
+            task["taskId"]: task
+            for task in (self._tasks.find_many_by_ids(sorted(wanted)) if wanted else [])
+        }
         for planner in planners:
-            planner["tasksDetails"] = self._tasks.find_many_by_ids(
-                planner.get("tasks", [])
-            )
+            planner["tasksDetails"] = [
+                tasks_by_id[task_id]
+                for task_id in dict.fromkeys(planner.get("tasks", []))
+                if task_id in tasks_by_id
+            ]
         return planners
 
     def update_focus(

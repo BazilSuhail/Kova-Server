@@ -42,13 +42,19 @@ def create_indexes(db: Database) -> None:
     db.users.create_index([("email", 1)], unique=True)
     db.tasks.create_index([("taskId", 1)], unique=True)
     db.tasks.create_index([("userId", 1)])
+    # Recap windows: daily/weekly dueDate range scans per user.
+    db.tasks.create_index([("userId", 1), ("dueDate", 1)])
     db.subtasks.create_index([("subtaskId", 1)], unique=True)
     db.subtasks.create_index([("taskId", 1)])
     db.notifications.create_index([("notificationId", 1)], unique=True)
     db.notifications.create_index([("userId", 1)])
+    # Feed listing sorts newest-first per user.
+    db.notifications.create_index([("userId", 1), ("createdAt", -1)])
     db.planner.create_index([("plannerId", 1)], unique=True)
     db.planner.create_index([("userId", 1)])
     db.planner.create_index([("date", 1)])
+    # Recap day lookups (prefix/range on date) scoped to a user.
+    db.planner.create_index([("userId", 1), ("date", 1)])
     db.summaries.create_index([("summaryId", 1)], unique=True)
     db.summaries.create_index([("userId", 1)])
     # Logout revocation: unique jti for O(1) checks, TTL to self-purge dead rows.

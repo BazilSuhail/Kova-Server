@@ -23,6 +23,7 @@ def run_development():
 
         port = int(os.environ.get('PORT', 5000))
         host = '0.0.0.0'
+        threads = int(os.environ.get("ZENFLOW_WEB_THREADS", "4"))
 
         print("Starting ZenFlow development server with Waitress...")
         print("✅ Using same server as production (Waitress)")
@@ -37,7 +38,7 @@ def run_development():
             app,
             host=host,
             port=port,
-            threads=4,                # Fewer threads for dev
+            threads=threads,           # Tunable via ZENFLOW_WEB_THREADS
             connection_limit=100,     # Lower connection limit for dev
             cleanup_interval=10,      # More frequent cleanup for dev
             channel_timeout=60,       # Shorter timeout for dev
@@ -63,6 +64,7 @@ def run_production():
         # Get port from environment (Railway, Heroku, etc.) or default to 5000
         port = int(os.environ.get('PORT', 5000))
         host = '0.0.0.0'
+        threads = int(os.environ.get("ZENFLOW_WEB_THREADS", "3"))
 
         print("Starting ZenFlow production server...")
         print("✅ No development server warnings!")
@@ -80,7 +82,7 @@ def run_production():
             app,
             host=host,
             port=port,
-            threads=3,                # Handle 3 concurrent requests
+            threads=threads,            # Tunable via ZENFLOW_WEB_THREADS (default 3)
             connection_limit=1000,    # Max 1000 connections
             cleanup_interval=30,      # Cleanup every 30 seconds
             channel_timeout=120,      # 2 minute timeout
