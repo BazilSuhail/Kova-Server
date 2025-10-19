@@ -22,7 +22,7 @@ def test_responses_carry_security_headers(client):
 
 
 def test_cors_allowlist_echoes_origin_by_default(client):
-    # Default ZENFLOW_CORS_ORIGINS is "*": any Origin is accepted (legacy parity).
+    # Default KOVA_CORS_ORIGINS is "*": any Origin is accepted (legacy parity).
     response = client.get("/api/health", headers={"Origin": "http://localhost:3000"})
     assert response.headers.get("Access-Control-Allow-Origin") in (
         "*",

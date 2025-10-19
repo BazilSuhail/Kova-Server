@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-EXTENSION_KEY = "zenflow.scheduler"
+EXTENSION_KEY = "kova.scheduler"
 
 
 def init_scheduler(app: Flask, settings: Settings) -> BackgroundScheduler | None:

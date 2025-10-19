@@ -1,11 +1,11 @@
-# ZenFlow Server — API Documentation
+# Kova Server — API Documentation
 
-Flask REST API for **ZenFlow** (tasks, planner, summaries, notifications, mood, reminders,
+Flask REST API for **Kova** (tasks, planner, summaries, notifications, mood, reminders,
 progress, and offline sync).
 Stack: **Flask + Flask-JWT-Extended + MongoDB (PyMongo) + Waitress**, served via `run.py`.
 
 > [!IMPORTANT]
-> 📱 **Client app:** [BazilSuhail/Zenflow-App](https://github.com/BazilSuhail/Zenflow-App) — **React Native + Expo**.
+> 📱 **Client app:** [Kova](https://github.com/BazilSuhail/Zenflow-App) — **React Native + Expo**.
 > This repo is the server only. Point the app's base URL at this API.
 
 - **Base URL (local):** `http://127.0.0.1:5000`
@@ -82,8 +82,8 @@ Stack: **Flask + Flask-JWT-Extended + MongoDB (PyMongo) + Waitress**, served via
 **Cross-cutting:** [🤖 AI flows — voice, NLP, notes & summaries](ai-flows.md)
 (pipelines, provider config, per-flow failure statuses)
 
-**Client-facing:** [📱 Client guide — build the app](client.md)
-(screens, every option → API, request/response examples)
+**Client-facing:** [📱 Kova build guide](client.md)
+(5-tab navigation + stacks, every screen → API, design tokens, request/response examples)
 
 ➡️ Open work items: **[TODO.md](TODO.md)**
 
@@ -114,7 +114,7 @@ curl http://127.0.0.1:5000/api/tasks/ \
 | `400` | Validation / missing fields | `{"message": "..."}` |
 | `401` | Bad credentials or missing/invalid/revoked JWT | `{"message": "..."}` |
 | `404` | Not found (or not owned by the caller) | `{"message": "..."}` |
-| `413` | Upload over `ZENFLOW_MAX_UPLOAD_MB` | `{"message": "Request payload too large"}` |
+| `413` | Upload over `KOVA_MAX_UPLOAD_MB` | `{"message": "Request payload too large"}` |
 | `415` | Wrong content type (NLP task) | `{"message": "..."}` |
 | `429` | Per-IP rate limit exceeded | `{"message": "Rate limit exceeded"}` + `X-RateLimit-*` / `Retry-After` headers |
 | `500` | Server error | `{"message": "Internal server error"}` (details only in server logs) |

@@ -55,7 +55,7 @@ def test_due_reminder_creates_notification_and_is_marked_sent(app, client, auth)
     )
 
     with app.app_context():
-        fired = app.extensions["zenflow.services"].reminders.deliver_due()
+        fired = app.extensions["kova.services"].reminders.deliver_due()
 
     assert fired == 1
     notifications = client.get("/api/notifications/", headers=headers).get_json()
@@ -85,7 +85,7 @@ def test_delivery_pushes_to_registered_devices(app, client, auth, monkeypatch):
     )
 
     with app.app_context():
-        app.extensions["zenflow.services"].reminders.deliver_due()
+        app.extensions["kova.services"].reminders.deliver_due()
 
     assert calls and calls[0][0]["to"] == "ExponentPushToken[stale]"
     # A token Expo reports as dead is pruned.

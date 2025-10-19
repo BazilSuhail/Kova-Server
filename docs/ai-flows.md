@@ -68,11 +68,11 @@ All Groq calls share one transport: `app/utils/groq_client.py`.
 
 | Env var | Default | Meaning |
 |---------|---------|---------|
-| `ZENFLOW_GROQ_API_KEY` | *(unset)* | Groq key — **required for all LLM flows** |
-| `ZENFLOW_ASSEMBLYAI_API_KEY` | *(unset)* | AssemblyAI key — required for voice |
-| `ZENFLOW_GROQ_LLM_URL` | Groq chat-completions URL | Override for proxies/tests |
-| `ZENFLOW_GROQ_MODEL` | `llama-3.3-70b-versatile` | Any current Groq production model |
-| `ZENFLOW_LLM_TIMEOUT_SECONDS` | `60` | Per-request Groq timeout |
+| `KOVA_GROQ_API_KEY` | *(unset)* | Groq key — **required for all LLM flows** |
+| `KOVA_ASSEMBLYAI_API_KEY` | *(unset)* | AssemblyAI key — required for voice |
+| `KOVA_GROQ_LLM_URL` | Groq chat-completions URL | Override for proxies/tests |
+| `KOVA_GROQ_MODEL` | `llama-3.3-70b-versatile` | Any current Groq production model |
+| `KOVA_LLM_TIMEOUT_SECONDS` | `60` | Per-request Groq timeout |
 
 ---
 
@@ -96,4 +96,4 @@ above. Successful task-field responses must contain string values for `title`,
 `description`, `category`, `dueDate`, and `createdFrom`.
 
 **Rate limiting:** these routes use the standard per-IP limits
-(`ZENFLOW_RATELIMIT_*`) — see [README.md](README.md#️conventions--error-shapes).
+(`KOVA_RATELIMIT_*`) — see [README.md](README.md#️conventions--error-shapes).

@@ -1,6 +1,6 @@
 """OCR client for quick-add from camera/scans (feature 11).
 
-Uses OCR.space by default (``ZENFLOW_OCR_URL``) — a plain multipart HTTP call,
+Uses OCR.space by default (``KOVA_OCR_URL``) — a plain multipart HTTP call,
 so no heavy native dependency. A missing key raises ``AIConfigError`` (503),
 matching the other provider guards: server misconfiguration must not look like
 client error.

@@ -3,7 +3,7 @@
 Payload validation happens at the edge; credential, revocation, and password
 rules live in ``AuthService``. Tokens are minted here (flask-jwt-extended
 concern), never in services. The credential-facing views carry the stricter
-per-IP rate limit from ``ZENFLOW_RATELIMIT_AUTH`` (brute-force protection).
+per-IP rate limit from ``KOVA_RATELIMIT_AUTH`` (brute-force protection).
 """
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ _REQUIRED_LOGIN_FIELDS = ("email", "password")
 
 def _auth_rate() -> str:
     """Auth rate-limit string for this app (settings-driven, read per request)."""
-    return current_app.config["ZENFLOW_RATELIMIT_AUTH"]
+    return current_app.config["KOVA_RATELIMIT_AUTH"]
 
 
 def _decode(token: str) -> dict:

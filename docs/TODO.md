@@ -1,4 +1,4 @@
-# 📌 TODO — ZenFlow API Docs & Improvements
+# 📌 TODO — Kova API Docs & Improvements
 
 Work list generated from the API analysis of `app/` + `run.py`.
 
@@ -13,9 +13,9 @@ Work list generated from the API analysis of `app/` + `run.py`.
 ## 🛡️ Sprint A — Security & Debt (done)
 
 - [x] Fail-fast JWT secret: production refuses to boot with the built-in secret
-      (`ZENFLOW_ALLOW_INSECURE_JWT=1` opts out, development warns only)
-- [x] CORS allowlist via `ZENFLOW_CORS_ORIGINS` (comma-separated; default `*` = legacy parity)
-- [x] Upload cap `MAX_CONTENT_LENGTH` via `ZENFLOW_MAX_UPLOAD_MB` (default 16 MB) → JSON `413`
+      (`KOVA_ALLOW_INSECURE_JWT=1` opts out, development warns only)
+- [x] CORS allowlist via `KOVA_CORS_ORIGINS` (comma-separated; default `*` = legacy parity)
+- [x] Upload cap `MAX_CONTENT_LENGTH` via `KOVA_MAX_UPLOAD_MB` (default 16 MB) → JSON `413`
 - [x] Security headers on every response: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`
 - [x] Health endpoints `GET /api/health` + `GET /api/health/ready` (public)
 - [x] Dead code deleted: `app/models/` (6 stubs) + `app/middleware/`
@@ -42,13 +42,13 @@ Work list generated from the API analysis of `app/` + `run.py`.
 
 ## 🧰 Sprint C — Quality Gates (done)
 
-- [x] Rate limiting (`flask-limiter`): per-IP `ZENFLOW_RATELIMIT_DEFAULT` (600/min)
-      + stricter `ZENFLOW_RATELIMIT_AUTH` (60/min on signup/login/refresh/password),
+- [x] Rate limiting (`flask-limiter`): per-IP `KOVA_RATELIMIT_DEFAULT` (600/min)
+      + stricter `KOVA_RATELIMIT_AUTH` (60/min on signup/login/refresh/password),
       `X-RateLimit-*` headers, JSON `429`, health probes exempt,
-      `ZENFLOW_RATELIMIT_ENABLED=false` off-switch, `ZENFLOW_RATELIMIT_STORAGE_URI` for Redis
+      `KOVA_RATELIMIT_ENABLED=false` off-switch, `KOVA_RATELIMIT_STORAGE_URI` for Redis
 - [x] Request-validation layer (`app/core/validation.py` — `require_fields`) wired into
       11 route payload checks with contract-identical messages
-- [x] Sentry error tracking: active only when `ZENFLOW_SENTRY_DSN` is set; 500s reported
+- [x] Sentry error tracking: active only when `KOVA_SENTRY_DSN` is set; 500s reported
 - [x] Lint gate: **ruff clean** (config in `pyproject.toml`)
 - [x] Type gate: **mypy clean** — 48 files
 - [x] Coverage gate: `--cov-fail-under=85` in `pytest.ini` (current **88%**)
@@ -57,10 +57,10 @@ Work list generated from the API analysis of `app/` + `run.py`.
 ## 🤖 Sprint D — AI Features (done)
 
 - [x] Fixed **hard-coded decommissioned Groq model** (`llama3-70b-8192` → configurable
-      `ZENFLOW_GROQ_MODEL`, default `llama-3.3-70b-versatile`) — all three AI flows were
+      `KOVA_GROQ_MODEL`, default `llama-3.3-70b-versatile`) — all three AI flows were
       failing against live Groq
 - [x] Shared Groq transport (`app/utils/groq_client.py`) — one place for URL, model,
-      timeout (`ZENFLOW_LLM_TIMEOUT_SECONDS`), key guard, and response envelope
+      timeout (`KOVA_LLM_TIMEOUT_SECONDS`), key guard, and response envelope
 - [x] Missing provider key → **503** `{"message": "AI provider is not configured"}`
       on all AI flows (was a confusing upstream 401 reported as client error)
 - [x] **Subtask LLM failures now 502** `{"message": "Subtask generation failed"}`
@@ -78,11 +78,11 @@ Work list generated from the API analysis of `app/` + `run.py`.
 - [x] **Weekly recap 14 queries → 2** — one dueDate range + one planner date range
       for the whole 7-day window instead of two lookups per day
 - [x] **Response compression** (gzip/brotli via `flask-compress`) for JSON/text ≥500 B
-      when the client sends `Accept-Encoding` — `ZENFLOW_COMPRESS_ENABLED=false` opts out
+      when the client sends `Accept-Encoding` — `KOVA_COMPRESS_ENABLED=false` opts out
 - [x] New indexes: `tasks(userId, dueDate)`, `planner(userId, date)`,
       `notifications(userId, createdAt)` — cover recap ranges and feed sorts
 - [x] `Server-Timing: app;dur=<ms>` header on every response (latency visibility)
-- [x] Waitress thread count configurable via `ZENFLOW_WEB_THREADS` (defaults unchanged)
+- [x] Waitress thread count configurable via `KOVA_WEB_THREADS` (defaults unchanged)
 - [x] Fake-Mongo test double gained `$gt/$gte/$lt/$lte` range operators
 - [x] Test suite: **121 passing**; coverage **92%**
 
@@ -111,6 +111,7 @@ Work list generated from the API analysis of `app/` + `run.py`.
       revoked-token rows (other users untouched)
 - [x] Tests: **186 passing**; coverage **89%**; ruff + mypy clean
 - [x] Docs: 9 new section pages (11–19), refreshed root + API README, `.env.example`, client guide
+      (5-tab navigation + stacks, every screen → endpoint, "Zenith Aura" design tokens)
 
 ## 📝 Documentation TODOs
 

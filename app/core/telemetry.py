@@ -1,7 +1,7 @@
 """Error tracking (Sentry), active only when a DSN is configured.
 
 Kept behind this thin wrapper so the app never imports or calls Sentry
-directly: without ``ZENFLOW_SENTRY_DSN`` everything is a no-op and the SDK is
+directly: without ``KOVA_SENTRY_DSN`` everything is a no-op and the SDK is
 never initialised (fast boot, zero network).
 """
 from __future__ import annotations
@@ -21,7 +21,7 @@ def init_sentry(settings: Settings) -> None:
     """Start the Sentry SDK when a DSN is present; otherwise stay inert."""
     global _active
     if not settings.sentry_dsn:
-        logger.info("sentry_disabled", extra={"reason": "no ZENFLOW_SENTRY_DSN"})
+        logger.info("sentry_disabled", extra={"reason": "no KOVA_SENTRY_DSN"})
         return
     sentry_sdk.init(
         dsn=settings.sentry_dsn,

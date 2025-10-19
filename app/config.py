@@ -1,6 +1,6 @@
 """Typed, immutable application settings sourced from the environment (12-factor).
 
-Canonical names follow the project convention ``ZENFLOW_<DOMAIN>_<KEY>``; every
+Canonical names follow the project convention ``KOVA_<DOMAIN>_<KEY>``; every
 legacy name (``MONGO_URI``, ``JWT_SECRET_KEY``, ...) is still accepted so the
 existing ``.env`` and Railway/Heroku config keep working unchanged.
 """
@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 # Preserved verbatim from the legacy ``Config``: changing it would invalidate
 # every token ever issued to clients.
 DEFAULT_JWT_SECRET = "kasnkdjnaskjdfnskdjf6454sdf"
-DEFAULT_MONGO_URI = "mongodb://localhost:27017/zenflow"
+DEFAULT_MONGO_URI = "mongodb://localhost:27017/kova"
 DEFAULT_GROQ_LLM_URL = "https://api.groq.com/openai/v1/chat/completions"
 DEFAULT_OCR_URL = "https://api.ocr.space/parse/image"
 DEFAULT_PUSH_URL = "https://exp.host/--/api/v2/push/send"
@@ -92,82 +92,82 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> Settings:
-        """Load ``.env`` then read settings, preferring ``ZENFLOW_*`` names."""
+        """Load ``.env`` then read settings, preferring ``KOVA_*`` names."""
         load_dotenv()
         return cls(
-            env=_env("ZENFLOW_ENV", "FLASK_ENV", default="production") or "production",
-            mongo_uri=_env("ZENFLOW_MONGO_URI", "MONGO_URI", default=DEFAULT_MONGO_URI)
+            env=_env("KOVA_ENV", "FLASK_ENV", default="production") or "production",
+            mongo_uri=_env("KOVA_MONGO_URI", "MONGO_URI", default=DEFAULT_MONGO_URI)
             or DEFAULT_MONGO_URI,
-            jwt_secret=_env("ZENFLOW_JWT_SECRET", "JWT_SECRET_KEY", default=DEFAULT_JWT_SECRET)
+            jwt_secret=_env("KOVA_JWT_SECRET", "JWT_SECRET_KEY", default=DEFAULT_JWT_SECRET)
             or DEFAULT_JWT_SECRET,
             jwt_expires_seconds=int(
-                _env("ZENFLOW_JWT_EXPIRES_SECONDS", default="3600") or "3600"
+                _env("KOVA_JWT_EXPIRES_SECONDS", default="3600") or "3600"
             ),
-            log_level=(_env("ZENFLOW_LOG_LEVEL", "LOG_LEVEL", default="INFO") or "INFO").upper(),
-            assemblyai_api_key=_env("ZENFLOW_ASSEMBLYAI_API_KEY", "ASSEMBLYAI_API_KEY"),
-            groq_api_key=_env("ZENFLOW_GROQ_API_KEY", "GROQ_API_KEY"),
-            groq_llm_url=_env("ZENFLOW_GROQ_LLM_URL", "GROQ_LLM_URL", default=DEFAULT_GROQ_LLM_URL)
+            log_level=(_env("KOVA_LOG_LEVEL", "LOG_LEVEL", default="INFO") or "INFO").upper(),
+            assemblyai_api_key=_env("KOVA_ASSEMBLYAI_API_KEY", "ASSEMBLYAI_API_KEY"),
+            groq_api_key=_env("KOVA_GROQ_API_KEY", "GROQ_API_KEY"),
+            groq_llm_url=_env("KOVA_GROQ_LLM_URL", "GROQ_LLM_URL", default=DEFAULT_GROQ_LLM_URL)
             or DEFAULT_GROQ_LLM_URL,
-            cors_origins=_parse_origins(_env("ZENFLOW_CORS_ORIGINS")),
-            max_upload_mb=int(_env("ZENFLOW_MAX_UPLOAD_MB", default="16") or "16"),
+            cors_origins=_parse_origins(_env("KOVA_CORS_ORIGINS")),
+            max_upload_mb=int(_env("KOVA_MAX_UPLOAD_MB", default="16") or "16"),
             allow_insecure_jwt=(
-                (_env("ZENFLOW_ALLOW_INSECURE_JWT", default="") or "").strip().lower()
+                (_env("KOVA_ALLOW_INSECURE_JWT", default="") or "").strip().lower()
                 in _TRUE_VALUES
             ),
             jwt_refresh_expires_seconds=int(
-                _env("ZENFLOW_JWT_REFRESH_EXPIRES_SECONDS", default="604800")
+                _env("KOVA_JWT_REFRESH_EXPIRES_SECONDS", default="604800")
                 or "604800"
             ),
             rate_limit_enabled=(
-                (_env("ZENFLOW_RATELIMIT_ENABLED", default="") or "").strip().lower()
+                (_env("KOVA_RATELIMIT_ENABLED", default="") or "").strip().lower()
                 not in ("0", "false", "no", "off")
             ),
             rate_limit_default=_env(
-                "ZENFLOW_RATELIMIT_DEFAULT", default="600 per minute"
+                "KOVA_RATELIMIT_DEFAULT", default="600 per minute"
             )
             or "600 per minute",
-            rate_limit_auth=_env("ZENFLOW_RATELIMIT_AUTH", default="60 per minute")
+            rate_limit_auth=_env("KOVA_RATELIMIT_AUTH", default="60 per minute")
             or "60 per minute",
             rate_limit_storage_uri=_env(
-                "ZENFLOW_RATELIMIT_STORAGE_URI", default="memory://"
+                "KOVA_RATELIMIT_STORAGE_URI", default="memory://"
             )
             or "memory://",
-            sentry_dsn=_env("ZENFLOW_SENTRY_DSN", "SENTRY_DSN") or None,
+            sentry_dsn=_env("KOVA_SENTRY_DSN", "SENTRY_DSN") or None,
             sentry_traces_sample_rate=float(
-                _env("ZENFLOW_SENTRY_TRACES_SAMPLE_RATE", default="0") or "0"
+                _env("KOVA_SENTRY_TRACES_SAMPLE_RATE", default="0") or "0"
             ),
-            groq_model=_env("ZENFLOW_GROQ_MODEL", default="llama-3.3-70b-versatile")
+            groq_model=_env("KOVA_GROQ_MODEL", default="llama-3.3-70b-versatile")
             or "llama-3.3-70b-versatile",
             llm_timeout_seconds=int(
-                _env("ZENFLOW_LLM_TIMEOUT_SECONDS", default="60") or "60"
+                _env("KOVA_LLM_TIMEOUT_SECONDS", default="60") or "60"
             ),
             compress_enabled=(
-                (_env("ZENFLOW_COMPRESS_ENABLED", default="") or "").strip().lower()
+                (_env("KOVA_COMPRESS_ENABLED", default="") or "").strip().lower()
                 not in ("0", "false", "no", "off")
             ),
             auto_categorize=(
-                (_env("ZENFLOW_AUTO_CATEGORIZE", default="") or "").strip().lower()
+                (_env("KOVA_AUTO_CATEGORIZE", default="") or "").strip().lower()
                 not in ("0", "false", "no", "off")
             ),
-            ocr_api_key=_env("ZENFLOW_OCR_API_KEY", "OCR_API_KEY"),
-            ocr_url=_env("ZENFLOW_OCR_URL", default=DEFAULT_OCR_URL) or DEFAULT_OCR_URL,
+            ocr_api_key=_env("KOVA_OCR_API_KEY", "OCR_API_KEY"),
+            ocr_url=_env("KOVA_OCR_URL", default=DEFAULT_OCR_URL) or DEFAULT_OCR_URL,
             ocr_timeout_seconds=int(
-                _env("ZENFLOW_OCR_TIMEOUT_SECONDS", default="60") or "60"
+                _env("KOVA_OCR_TIMEOUT_SECONDS", default="60") or "60"
             ),
             push_enabled=(
-                (_env("ZENFLOW_PUSH_ENABLED", default="") or "").strip().lower()
+                (_env("KOVA_PUSH_ENABLED", default="") or "").strip().lower()
                 not in ("0", "false", "no", "off")
             ),
-            push_url=_env("ZENFLOW_PUSH_URL", default=DEFAULT_PUSH_URL) or DEFAULT_PUSH_URL,
-            push_access_token=_env("ZENFLOW_PUSH_ACCESS_TOKEN"),
+            push_url=_env("KOVA_PUSH_URL", default=DEFAULT_PUSH_URL) or DEFAULT_PUSH_URL,
+            push_access_token=_env("KOVA_PUSH_ACCESS_TOKEN"),
             scheduler_enabled=(
-                (_env("ZENFLOW_SCHEDULER_ENABLED", default="") or "").strip().lower()
+                (_env("KOVA_SCHEDULER_ENABLED", default="") or "").strip().lower()
                 not in ("0", "false", "no", "off")
             ),
             scheduler_interval_seconds=int(
-                _env("ZENFLOW_SCHEDULER_INTERVAL_SECONDS", default="30") or "30"
+                _env("KOVA_SCHEDULER_INTERVAL_SECONDS", default="30") or "30"
             ),
-            avatar_dir=_env("ZENFLOW_AVATAR_DIR") or None,
+            avatar_dir=_env("KOVA_AVATAR_DIR") or None,
         )
 
     @classmethod
@@ -175,7 +175,7 @@ class Settings:
         """Deterministic settings for the test suite (no ``.env`` read)."""
         return cls(
             env="test",
-            mongo_uri="mongodb://localhost:27017/zenflow_test",
+            mongo_uri="mongodb://localhost:27017/kova_test",
             jwt_secret="test-secret-key-that-is-at-least-32-bytes-long",
             jwt_expires_seconds=3600,
             log_level="WARNING",

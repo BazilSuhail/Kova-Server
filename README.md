@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🌿 ZenFlow Server
+# 🌿 Kova Server
 
-**The REST API powering ZenFlow — a Personal AI Life Assistant for students.**
+**The REST API powering Kova — a Personal AI Life Assistant for students.**
 
 Plan, prioritize, reflect, and grow: natural-language tasks, voice capture, mood-aware
 suggestions, smart reminders, progress tracking, and offline sync.
@@ -22,8 +22,8 @@ suggestions, smart reminders, progress tracking, and offline sync.
 ---
 
 > [!IMPORTANT]
-> 📱 **This is the server only.** The ZenFlow **mobile client** is built with **React Native + Expo**:
-> **[github.com/BazilSuhail/Zenflow-App](https://github.com/BazilSuhail/Zenflow-App)**
+> 📱 **This is the server only.** The **Kova mobile client** is built with **React Native + Expo**:
+> **[Kova client repo](https://github.com/BazilSuhail/Zenflow-App)**
 > Clone both repos — run this API, point the app at `http://<your-lan-ip>:5000`, and you have the full product.
 
 > [!TIP]
@@ -34,7 +34,7 @@ suggestions, smart reminders, progress tracking, and offline sync.
 
 ## 📖 Overview
 
-ZenFlow Server is a production-minded **Flask + MongoDB** REST API that backs an AI life-assistant:
+Kova Server is a production-minded **Flask + MongoDB** REST API that backs an AI life-assistant:
 it turns messy input (typed sentences, voice notes, photos of notes) into structured tasks,
 automatically categorises them, plans your day, watches your mood, nudges you at the right time,
 and keeps everything working offline.
@@ -52,6 +52,13 @@ and keeps everything working offline.
 - 🔒 **Hardened** — JWT rotation + instant revocation, rate limiting, security headers, structured JSON logs.
 - ✅ **Well tested** — 186 tests against an in-memory Mongo, 89% coverage, ruff + mypy clean.
 
+### Why "Kova"?
+
+**Kova** is the Finnish word for **hard, strong, solid** — with a Slavic root tied to
+**forging**. That is the promise the app makes: a tool that holds your schedule together
+when university life gets chaotic, and helps you build the consistency and resilience that
+keep burnout at bay. A well-forged instrument — sharp, dependable, unshakable.
+
 ---
 
 ## 🚀 Quick Start
@@ -63,8 +70,8 @@ and keeps everything working offline.
 ### 1. Clone & create a virtual environment
 
 ```bash
-git clone <this-repo-url> ZenFlow-Server
-cd ZenFlow-Server
+git clone <this-repo-url> Kova-Server
+cd Kova-Server
 python -m venv .venv
 .\.venv\Scripts\Activate          # Windows
 # source .venv/bin/activate       # macOS / Linux
@@ -92,11 +99,11 @@ At minimum set:
 
 | Variable | Purpose |
 |----------|---------|
-| `ZENFLOW_MONGO_URI` | MongoDB connection string (default `mongodb://localhost:27017/zenflow`) |
-| `ZENFLOW_JWT_SECRET` | **Required in production** — boot fails fast without it |
-| `ZENFLOW_GROQ_API_KEY` | Enables NLP / voice / notes / OCR task generation |
-| `ZENFLOW_ASSEMBLYAI_API_KEY` | Enables voice transcription |
-| `ZENFLOW_OCR_API_KEY` | Enables camera/OCR quick-add |
+| `KOVA_MONGO_URI` | MongoDB connection string (default `mongodb://localhost:27017/kova`) |
+| `KOVA_JWT_SECRET` | **Required in production** — boot fails fast without it |
+| `KOVA_GROQ_API_KEY` | Enables NLP / voice / notes / OCR task generation |
+| `KOVA_ASSEMBLYAI_API_KEY` | Enables voice transcription |
+| `KOVA_OCR_API_KEY` | Enables camera/OCR quick-add |
 
 Every supported variable is documented in [`.env.example`](.env.example).
 
@@ -130,13 +137,13 @@ curl http://127.0.0.1:5000/api/tasks/ -H "Authorization: Bearer <access_token>"
 
 ## 🔑 Authentication
 
-ZenFlow uses **stateless JWT** auth with **refresh-token rotation** and **instant revocation**.
+Kova uses **stateless JWT** auth with **refresh-token rotation** and **instant revocation**.
 
 | Concept | Detail |
 |---------|--------|
 | Header | `Authorization: Bearer <access_token>` |
-| Access token | Valid **1 hour** (`ZENFLOW_JWT_EXPIRES_SECONDS=3600`) |
-| Refresh token | Valid **7 days** (`ZENFLOW_JWT_REFRESH_EXPIRES_SECONDS=604800`), **rotated on every refresh** |
+| Access token | Valid **1 hour** (`KOVA_JWT_EXPIRES_SECONDS=3600`) |
+| Refresh token | Valid **7 days** (`KOVA_JWT_REFRESH_EXPIRES_SECONDS=604800`), **rotated on every refresh** |
 | Revocation | `POST /api/auth/logout` blocklists the token's `jti` (TTL collection) → next request fails immediately |
 | Passwords | bcrypt, cost **12** |
 
@@ -152,7 +159,7 @@ signup / login ──▶ { access_token, refresh_token, userId }
 
 > [!WARNING]
 > Never commit `.env` or real secrets. Production **refuses to boot** with the built-in JWT
-> secret unless `ZENFLOW_ALLOW_INSECURE_JWT=1` (development escape hatch only).
+> secret unless `KOVA_ALLOW_INSECURE_JWT=1` (development escape hatch only).
 
 **Public endpoints:** `POST /api/auth/signup`, `POST /api/auth/login`, `POST /api/auth/refresh`,
 `GET /api/health`, `GET /api/health/ready`, `GET /api/users/avatars`,
@@ -225,7 +232,7 @@ a bare array without them, a `{items, pagination}` envelope with them.
 
 ```text
         ┌──────────────────────────────┐
-        │  React Native (Expo) client  │   BazilSuhail/Zenflow-App
+        │  React Native (Expo) client  │   Kova client
         └───────────────┬──────────────┘
                         │ HTTPS / JSON (JWT Bearer)
         ┌───────────────▼──────────────┐
@@ -274,7 +281,7 @@ Routes fetch services from a container (`get_services()`) — no globals, no mon
 ## 🗂️ Project Structure
 
 ```text
-zenflow-server/
+kova-server/
 ├── run.py                        # entrypoint: dev / prod / debug runners (Waitress)
 ├── pytest.ini                    # test discovery + coverage gate (85%)
 ├── requirements.txt              # pinned runtime deps
@@ -324,7 +331,7 @@ zenflow-server/
 ├── docs/
 │   ├── README.md                 # full API reference (index + conventions)
 │   ├── sections/                 # per-blueprint request/response docs (01–19)
-│   ├── client.md                 # build-the-app guide (screens → endpoints)
+│   ├── client.md                 # Kova guide (tabs/stacks → endpoints + tokens)
 │   ├── ai-flows.md               # AI pipelines + provider config
 │   └── TODO.md                   # done / open work
 │
@@ -385,9 +392,9 @@ MongoDB collections (indexes auto-created at boot; every `*Id` is uniquely index
 - **Logs** are structured JSON with `X-Request-ID` correlation ids (echoed in responses).
 - **Security headers** on every response: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`.
 - **Rate limiting** per IP (default `600/min`, auth routes `60/min`) → JSON `429`; health probes exempt.
-- **Uploads** capped via `ZENFLOW_MAX_UPLOAD_MB` (default 16 MB) → JSON `413`.
+- **Uploads** capped via `KOVA_MAX_UPLOAD_MB` (default 16 MB) → JSON `413`.
 - **AI flows** need keys; without them they answer `503` (never crash). See [`docs/ai-flows.md`](docs/ai-flows.md).
-- **Scheduler** (`ZENFLOW_SCHEDULER_ENABLED`, default on) uses APScheduler to deliver due reminders.
+- **Scheduler** (`KOVA_SCHEDULER_ENABLED`, default on) uses APScheduler to deliver due reminders.
 - **Offline sync** relies on `updatedAt` on every document + `tombstones` for deletions.
 - **Errors:** JSON `{ "message": "..." }` for 4xx/5xx; server details stay in the logs.
 - **Filtering/paging:** list endpoints return a bare array unless `page`/`limit` are supplied.
@@ -400,7 +407,7 @@ MongoDB collections (indexes auto-created at boot; every `*Id` is uniquely index
 |-----|---------------|
 | **[docs/README.md](docs/README.md)** | API index, conventions, error shapes, quick start |
 | **[docs/sections/](docs/sections/)** | Per-blueprint request/response reference (01–19) |
-| **[docs/client.md](docs/client.md)** | Build-the-app guide: screens → endpoints |
+| **[docs/client.md](docs/client.md)** | Kova client guide: navigation, screens → endpoints, design tokens |
 | **[docs/ai-flows.md](docs/ai-flows.md)** | AI pipelines, provider config, failure semantics |
 | **[docs/TODO.md](docs/TODO.md)** | Done + open work |
 
@@ -408,7 +415,7 @@ MongoDB collections (indexes auto-created at boot; every `*Id` is uniquely index
 
 <div align="center">
 
-**Client app:** [BazilSuhail/Zenflow-App](https://github.com/BazilSuhail/Zenflow-App) · React Native + Expo
+**Client app:** [Kova](https://github.com/BazilSuhail/Zenflow-App) · React Native + Expo
 **Server:** this repo
 
 Built with 🌿 for students who want to plan, reflect, and grow.

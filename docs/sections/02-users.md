@@ -151,7 +151,7 @@ curl -X PUT http://127.0.0.1:5000/api/users/profile/settings \
 
 - **Auth:** public (the mobile app may show the picker during onboarding)
 - Lists the avatar images shipped with the server (`app/assets/avatars`, or
-  `ZENFLOW_AVATAR_DIR`).
+  `KOVA_AVATAR_DIR`).
 
 ```json
 {

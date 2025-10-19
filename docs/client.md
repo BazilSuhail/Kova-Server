@@ -1,13 +1,16 @@
-# ZenFlow Client Guide — Build the App
+# Kova — Client Build Guide
 
-Everything a client app needs to fully utilize this server: **14 screens**, every UI
-option mapped to the API it calls. Endpoints are grouped by screen, not by backend blueprint.
+Everything the **Kova** app (React Native + Expo) needs from this server: a **5-tab
+bottom bar + per-tab stack** navigation plan, every screen mapped to its endpoint, and
+the **"Zenith Aura"** design tokens. Endpoints are grouped by screen, not by backend blueprint.
 
 > [!IMPORTANT]
-> 📱 **Reference client:** [BazilSuhail/Zenflow-App](https://github.com/BazilSuhail/Zenflow-App) — **React Native + Expo**.
+> 📱 **Reference client:** [Kova](https://github.com/BazilSuhail/Zenflow-App) — **React Native + Expo**.
 > Point its API base URL at this server. Full per-endpoint schemas live in
 > [`README.md`](README.md) and [`sections/`](sections/).
 
+- **Navigation:** bottom bar (**Home · Tasks · Plan · Insights · Profile**) + a stack per tab — [🧭 Navigation & Screen Plan](#-navigation--screen-plan)
+- **Theme:** "Zenith Aura" dual-mode palette — [🎨 Design Tokens](#-design-tokens--zenith-aura)
 - **Base URL (local):** `http://127.0.0.1:5000` · all routes under `/api`
 - **Auth:** `Authorization: Bearer <access_token>` (JWT, **expires in 1 h**;
   refresh token valid **7 d**, rotated on every refresh)
@@ -17,26 +20,171 @@ option mapped to the API it calls. Endpoints are grouped by screen, not by backe
 
 ---
 
-## 📱 Screen Map
+## 🧭 Navigation & Screen Plan
 
-| # | Screen | Endpoints it owns |
-|---|--------|-------------------|
-| 1 | [Auth (Login / Signup)](#screen-1) | 3 |
-| 2 | [Home / Dashboard](#screen-2) | 1 (`/api/dashboard/`) |
-| 3 | [Tasks (+ Create sheet)](#screen-3) | 11 |
-| 4 | [Task Detail + Subtasks](#screen-4) | 5 |
-| 5 | [Planner (day plan)](#screen-5) | 6 |
-| 6 | [Summaries (library)](#screen-6) | 6 |
-| 7 | [Recaps (daily + weekly)](#screen-7) | 2 |
-| 8 | [Notifications](#screen-8) | 5 |
-| 9 | [Profile & Settings](#screen-9) | 10 |
-| 10 | [Calendar](#screen-10) | 1 |
-| 11 | [Mood & Journal](#screen-11) | 11 |
-| 12 | [Progress & Insights](#screen-12) | 2 |
-| 13 | [Reminders & Push](#screen-13) | 8 |
-| 14 | [Offline Sync](#screen-14) | 2 |
-| — | [Ops (no screen)](#ops) | 2 |
-| | **Total** | **73** |
+**Shell**
+
+```text
+Root
+├── BootSplash                (token restore · first sync · theme load)
+├── AuthStack                 (unauthenticated)
+│   └── Welcome · Login · Signup · Permissions
+└── MainTabs                  (authenticated — bottom bar persists)
+    ├── Home     → HomeStack
+    ├── Tasks    → TasksStack
+    ├── Plan     → PlanStack
+    ├── Insights → InsightsStack
+    └── Profile  → ProfileStack
+```
+
+### Bottom bar (the menu)
+
+| Tab | Icon | Purpose | Accent | Contains |
+|-----|------|---------|--------|----------|
+| **Home** | `home` | Today at a glance: counts, streak, mood, unread, next reminders | success + ai | [Dashboard](#screen-2) · [Notifications](#screen-8) · Daily Recap · Search |
+| **Tasks** | `check-square` | Work list + AI / voice / scan capture + subtasks | ai | [Tasks](#screen-3) · [Task Detail](#screen-4) |
+| **Plan** | `calendar` | Planner, calendar views, reminders, recaps | ai | [Planner](#screen-5) · [Calendar](#screen-10) · [Reminders](#screen-13) · [Recaps](#screen-7) |
+| **Insights** | `bar-chart` | Progress, mood & journal, suggestions, library | success + ai | [Progress](#screen-12) · [Mood & Journal](#screen-11) · [Summaries](#screen-6) |
+| **Profile** | `user` | Account, avatars, settings, devices, sync, danger zone | neutral | [Profile & Settings](#screen-9) · [Offline Sync](#screen-14) |
+
+Bar styling: `surface` background, `border` hairline on top, **active `ai`**, inactive `textSecondary`.
+
+### Screens per stack
+
+**HomeStack**
+
+| Screen | Type | Purpose | API |
+|--------|------|---------|-----|
+| Home | root | Today card: counts, streak, mood, unread, next reminders, suggestions | `GET /api/dashboard/` |
+| Notifications | push | Feed, unread filter, mark read, delete | `GET /api/notifications/` |
+| Daily Recap | push | Today's completed vs pending + mood | `GET /api/daily-recap/` |
+| Global Search | push · modal | Find tasks by title | `GET /api/tasks/` |
+
+**TasksStack**
+
+| Screen | Type | Purpose | API |
+|--------|------|---------|-----|
+| Tasks | root | List, search, Active/Done filter, category chips, paging | `GET /api/tasks/` |
+| Task Detail | push | Task + subtask checklist, AI "break into steps", edit/delete | `GET /api/tasks/<task_id>` |
+| Create Task | push | Manual: title, description, category, due date | `POST /api/tasks/` |
+| AI Capture | modal | Natural-language sentence → task | `POST /api/tasks/create/natural-language` |
+| Voice Capture | modal | Record / upload audio → task | `POST /api/tasks/create/voice` |
+| Scan Capture | modal | Photo of notes → task (OCR) | `POST /api/tasks/create/image` |
+| Title Assistant | inline | Rewrite / save a vague title | `POST /api/tasks/suggest-title` |
+| Category Picker | inline | Re-derive the task category | `POST /api/tasks/<task_id>/categorize` |
+
+**PlanStack**
+
+| Screen | Type | Purpose | API |
+|--------|------|---------|-----|
+| Planner | root | Today's plan: focus + linked tasks + reflection | `GET /api/planner/` |
+| Plan Editor | push | Set focus, link tasks, edit reflection | `PUT /api/planner/<planner_id>` |
+| Calendar | push | Day / week / month over tasks + plans | `GET /api/calendar/` |
+| Reminders | push | Pending / sent list, upcoming 48 h | `GET /api/reminders/` |
+| Reminder Sheet | modal | Schedule a reminder | `POST /api/reminders/` |
+| Weekly Recap | push | 7-day totals + per-day rows | `GET /api/weekly-recap/` |
+
+**InsightsStack**
+
+| Screen | Type | Purpose | API |
+|--------|------|---------|-----|
+| Insights | root | Progress: totals, completion rate, streak, load balance, achievements | `GET /api/progress/` |
+| Suggestions | push | Adaptive suggestion cards | `GET /api/suggestions/` |
+| Mood Check-in | modal | Mood + energy + note + tags, load guidance | `POST /api/mood/` |
+| Mood Trends | push | Score series, distribution, averages, streak | `GET /api/mood/trends` |
+| Mood History | push | Entry feed, open / delete | `GET /api/mood/` |
+| Journal | push | Today's prompt + affirmation, write reflection | `GET /api/reflections/today` |
+| Journal Entry | push | Read / delete one reflection | `GET /api/reflections/<reflection_id>` |
+| Library | push | Summary list (PDF + notes) | `GET /api/summaries/` |
+| Summary Detail | push | Bullets, save-as-task, delete | `POST /api/summaries/<summary_id>/convert-to-tasks` |
+| New Summary | modal | Upload PDF / paste notes | `POST /api/summaries/create-from-text` |
+
+**ProfileStack**
+
+| Screen | Type | Purpose | API |
+|--------|------|---------|-----|
+| Profile | root | Avatar + name + email, quick links | `GET /api/users/profile` |
+| Edit Profile | push | Name, email, preferences | `PUT /api/users/profile` |
+| Avatar Picker | push | Grid of hosted avatars | `GET /api/users/avatars` |
+| Settings | push | Theme, font size, layout, notification style | `PUT /api/users/profile/settings` |
+| Devices & Push | push | Registered devices, unregister | `GET /api/devices/` |
+| Sync & Storage | push | Last sync, manual sync, delta stats | `POST /api/sync/pull` |
+| Change Password | push | Current + new (≥ 8) | `PUT /api/auth/password` |
+| About / Help | push | Version, links | — |
+| Danger Zone | push | Delete account (cascades everything) | `DELETE /api/users/profile` |
+
+### Global overlays
+
+| Overlay | Purpose | API |
+|---------|---------|-----|
+| Create Sheet (FAB) | Manual · AI · Voice · Scan | `POST /api/tasks/`, `POST /api/tasks/create/natural-language`, `POST /api/tasks/create/voice`, `POST /api/tasks/create/image` |
+| Permissions prompt | Ask + register device for push | `POST /api/devices/` |
+| Offline banner / sync toast | Connectivity + queued changes | `POST /api/sync/push` |
+| Filter sheet | Status, category, date range | `GET /api/tasks/` |
+| Logout | Revoke tokens instantly | `POST /api/auth/logout` |
+
+---
+
+## 🎨 Design Tokens — "Zenith Aura"
+
+Dual-mode palette. Resolve **every** colour through a token so dark/light follow the
+system (or the user's [Settings](#screen-9)).
+
+| Token | Dark | Light | Used for |
+|-------|------|-------|----------|
+| `bg` | `#0F172A` | `#F8FAFC` | screen canvas, headers |
+| `surface` | `#1E293B` | `#FFFFFF` | cards, tab bar, modals, sheets |
+| `ai` | `#8B5CF6` | `#7C3AED` | AI badges/buttons, FAB, active tab, avatar ring, suggestions |
+| `success` | `#10B981` | `#059669` | checkmarks, streaks, progress bars, completed chips |
+| `textPrimary` | `#F1F5F9` | `#0F172A` | titles, key numbers |
+| `textSecondary` | `#94A3B8` | `#64748B` | subtitles, timestamps, captions |
+
+**Extension tokens** — not in the core palette but required for a pro UI (add, don't replace):
+
+| Token | Dark | Light | Used for |
+|-------|------|-------|----------|
+| `danger` | `#EF4444` | `#DC2626` | delete, errors, overdue tasks |
+| `warning` | `#F59E0B` | `#D97706` | due-soon, low energy |
+| `border` | `#334155` | `#E2E8F0` | dividers, input strokes |
+| `overlay` | `rgba(15,23,42,.6)` | `rgba(15,23,42,.4)` | modal scrim |
+
+**Accent discipline** (keeps `ai` meaningful)
+
+- `ai` = "smart / automation" only → AI Capture, Voice, Scan, Title Assistant, Category
+  Picker, [Suggestions](#screen-12), New Summary, active tab, FAB.
+- `success` = reward / completion → [Home](#screen-2) streak, [Progress](#screen-12),
+  checkboxes, completion %, [Journal](#screen-11) affirmations.
+- Everything else stays neutral (`bg` / `surface` + text tokens).
+
+**Navigation chrome**
+
+- Tab bar: `surface` bg, `border` hairline on top, active label+icon `ai`, inactive `textSecondary`.
+- Headers: transparent on `bg`, title `textPrimary`, back chevron `ai`.
+- Sheets / modals: `surface`, drag handle `textSecondary`, scrim `overlay`.
+- Status bar: light-content (dark mode) / dark-content (light mode).
+
+---
+
+## 🗺️ Screen & Endpoint Map
+
+| # | Area | Tab / Stack | Endpoints it owns |
+|---|------|-------------|-------------------|
+| 1 | [Auth (Login / Signup)](#screen-1) | AuthStack | 3 |
+| 2 | [Home / Dashboard](#screen-2) | Home | 1 (`/api/dashboard/`) |
+| 3 | [Tasks (+ Create sheet)](#screen-3) | Tasks | 11 |
+| 4 | [Task Detail + Subtasks](#screen-4) | Tasks | 5 |
+| 5 | [Planner (day plan)](#screen-5) | Plan | 6 |
+| 6 | [Summaries (library)](#screen-6) | Insights | 6 |
+| 7 | [Recaps (daily + weekly)](#screen-7) | Home · Plan | 2 |
+| 8 | [Notifications](#screen-8) | Home | 5 |
+| 9 | [Profile & Settings](#screen-9) | Profile | 10 |
+| 10 | [Calendar](#screen-10) | Plan | 1 |
+| 11 | [Mood & Journal](#screen-11) | Insights | 11 |
+| 12 | [Progress & Insights](#screen-12) | Insights | 2 |
+| 13 | [Reminders & Push](#screen-13) | Plan · Profile | 8 |
+| 14 | [Offline Sync](#screen-14) | Profile | 2 |
+| — | [Ops (no screen)](#ops) | — | 2 |
+| | **Total** | | **75** |
 
 ---
 
@@ -74,9 +222,9 @@ async function api(path, opts = {}) {
 }
 ```
 
-### Pagination contract (3 list endpoints)
+### Pagination contract (4 list endpoints)
 
-`GET /api/tasks/`, `GET /api/notifications/`, `GET /api/summaries/`:
+`GET /api/tasks/`, `GET /api/notifications/`, `GET /api/summaries/`, `GET /api/mood/`:
 
 - **No `page`/`limit`** → body is a **bare array** (legacy shape).
 - **Either param present** → body becomes an envelope (`limit` max **100**):
@@ -95,7 +243,7 @@ async function api(path, opts = {}) {
 | `400` | Validation (`{"message": "..."}`) | Show field error |
 | `401` | Missing/invalid/revoked JWT | Refresh once → retry; else logout |
 | `404` | Not found **or not yours** | Show "not found"; remove stale item |
-| `413` | Upload over `ZENFLOW_MAX_UPLOAD_MB` (16) | Shrink file |
+| `413` | Upload over `KOVA_MAX_UPLOAD_MB` (16) | Shrink file |
 | `415` | NLP endpoint got non-JSON | Fix `Content-Type` |
 | `429` | Rate limit (default 600/min/IP, **auth 60/min**) | Wait `Retry-After` seconds |
 | `500` | Server error | Generic failure message |
@@ -120,7 +268,7 @@ async function api(path, opts = {}) {
 
 | Option / Element | API | Consumes → Produces |
 |---|---|---|
-| **Sign up** form (name, email, password ≥8) | `POST /api/auth/signup` | credentials → user + token pair |
+| **Sign up** form (name, email, password) | `POST /api/auth/signup` | credentials → user + token pair |
 | **Log in** form (email, password) | `POST /api/auth/login` | credentials → token pair |
 | *Silent* startup / 401 recovery | `POST /api/auth/refresh` | refresh token → new token pair |
 | *"Forgot password"* | — | **not available on this server** |
@@ -143,6 +291,9 @@ async function api(path, opts = {}) {
 Optional fields: `profilePicture` (default `""`), `preferences`
 (default `{ "theme": "light", "notificationsEnabled": true }`).
 Errors: `400 "Missing required fields"` · `400 "Email already exists"` · `500`.
+
+⚠️ **No server-side password rule on signup** — enforce your own minimum in the
+form. Only `PUT /api/auth/password` requires **≥ 8** characters server-side.
 
 ### `POST /api/auth/login`
 
@@ -274,7 +425,7 @@ curl -X POST http://127.0.0.1:5000/api/tasks/create/voice \
 ```
 
 Flow: upload → AssemblyAI transcription → Groq LLM fields. Needs
-`ZENFLOW_ASSEMBLYAI_API_KEY` + `ZENFLOW_GROQ_API_KEY`.
+`KOVA_ASSEMBLYAI_API_KEY` + `KOVA_GROQ_API_KEY`.
 Errors: `400 "Audio file is required."` · `503` (missing provider key) · `500`.
 
 ### `GET /api/tasks/` — list, search, filter, page
@@ -554,6 +705,7 @@ Errors: `404 "Planner not found"` · `500`.
 | Option / Element | API | Consumes → Produces |
 |---|---|---|
 | **Upload & summarize PDF** | `POST /api/summaries/create` | PDF file → AI bullets + task suggestion → `201` |
+| **Summarize notes / text** | `POST /api/summaries/create-from-text` | `{text, title}` → AI bullets (3–5) → `201` |
 | **Library list** | `GET /api/summaries/` | nothing / paging → array or envelope |
 | **Open detail** | from the list payload | no single-GET endpoint — render from list data |
 | ✅ **"Save suggested task"** | `POST /api/summaries/<id>/convert-to-tasks` | path id → `201` real task |
@@ -827,7 +979,7 @@ to pick a server-hosted avatar (see the avatar picker below).
 Errors: `400 "Email already in use"` · `400 "Unknown avatar"` ·
 `400 "User not found or no changes made"` · `500`.
 
-### `GET` / `PUT /api/users/profile/settings`
+### `GET /api/users/profile/settings` · `PUT /api/users/profile/settings`
 
 ```json
 200 { "theme": "light", "notificationsEnabled": true }
@@ -903,24 +1055,6 @@ Irreversible — confirm in the UI.
 
 ---
 
-### `GET /api/users/profile/settings`
-
-```json
-200 { "theme": "light", "notificationsEnabled": true }
-```
-
-### `PUT /api/users/profile/settings`
-
-```json
-// request — only these keys are accepted; unknown keys are ignored
-{ "theme": "dark", "fontSize": "large", "layout": "compact", "notificationStyle": "gentle" }
-// 200 → merged settings object
-```
-
-Accepted keys: `theme`, `fontSize`, `layout`, `notificationStyle`, `notificationsEnabled`, `language`.
-
----
-
 <a id="screen-10"></a>
 
 ## 10. 📅 Calendar Screen (day / week / month)
@@ -988,6 +1122,27 @@ Errors: `400 "view must be one of: day, week, month"` · `400 "date must be a YY
 
 `score` 1–2 → `light`, 3 → `balanced`, 4–5 → `stretch`
 (mood labels map to scores: `awful`=1 … `great`/`amazing`=5).
+
+### `POST /api/mood/` — log a mood entry
+
+```json
+// request — mood required; score is derived from the label when omitted
+{ "mood": "good", "energy": 4, "note": "Focused morning", "tags": ["study"] }
+// 201
+{ "moodId": "…", "mood": "good", "score": 4, "energy": 4,
+  "note": "Focused morning", "tags": ["study"], "date": "2026-10-17" }
+```
+
+Errors: `400 "mood is required"` · `401`.
+
+### `POST /api/reflections/` — write today's reflection
+
+```json
+// request — text required; posting twice for the same date replaces that day
+{ "text": "Shipped the docs and felt good.", "mood": "good" }
+// 201
+{ "reflectionId": "…", "date": "2026-10-17", "text": "…", "mood": "good" }
+```
 
 ---
 
@@ -1068,8 +1223,24 @@ Errors: `400 "title and fireAt are required"` · `400 "fireAt must be an ISO dat
   "deleted": [ { "collection": "tasks", "docId": "…" } ] }
 ```
 
-**Conflict resolution is last-write-wins** by `updatedAt`. Full details:
-[`sections/19-sync.md`](sections/19-sync.md).
+### `POST /api/sync/push` — upload offline edits
+
+```json
+// request — `changes` maps each collection to an array of upserts + deletions
+{ "changes": {
+  "tasks": [ { "taskId": "client-1", "title": "Made offline" } ],
+  "deletions": [ { "collection": "tasks", "id": "client-2" } ] } }
+// 200
+{ "applied": { "tasks": 1, "deletions": 1, "planner": 0, "subtasks": 0,
+               "summaries": 0, "notifications": 0, "mood": 0,
+               "reflections": 0, "reminders": 0 },
+  "skipped": [], "serverTime": "2026-10-17T09:15:00+00:00" }
+```
+
+Upserts are keyed on each document's id field and **forced to the caller's
+`userId`**. **Conflict resolution is last-write-wins** by `updatedAt` — an
+incoming doc older than the server copy is skipped (and listed in `skipped`).
+Full details: [`sections/19-sync.md`](sections/19-sync.md).
 
 ---
 
@@ -1092,6 +1263,6 @@ All **75 endpoints** are assigned to a screen above:
 + 6 (summaries) + 11 (mood & journal) + 2 (progress & insights) + 8 (reminders & push)
 + 2 (recaps) + 5 (notifications) + 10 (profile & settings) + 2 (sync) + 2 (ops) = 75`
 
-**Minimum viable app:** 6 screens (Auth, Dashboard, Tasks + detail, Planner,
-Notifications, Profile).
-**Full utilization:** all 14 screens.
+**Minimum viable ship:** Auth → [Home](#screen-2) → [Tasks](#screen-3) (+ detail) →
+[Planner](#screen-5) → [Notifications](#screen-8) → [Profile](#screen-9).
+**Full v1:** all 5 tabs + every screen listed in the navigation plan above.

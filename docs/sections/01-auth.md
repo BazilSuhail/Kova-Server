@@ -80,8 +80,8 @@ curl -X POST http://127.0.0.1:5000/api/auth/login \
 ```
 
 **Notes**
-- JWT identity = `userId`; **access token valid 1 hour** (`ZENFLOW_JWT_EXPIRES_SECONDS = 3600`),
-  **refresh token valid 7 days** (`ZENFLOW_JWT_REFRESH_EXPIRES_SECONDS = 604800`).
+- JWT identity = `userId`; **access token valid 1 hour** (`KOVA_JWT_EXPIRES_SECONDS = 3600`),
+  **refresh token valid 7 days** (`KOVA_JWT_REFRESH_EXPIRES_SECONDS = 604800`).
 - bcrypt cost pinned to `rounds=12`.
 
 ---

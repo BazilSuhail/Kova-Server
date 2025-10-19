@@ -3,7 +3,7 @@
 > File: `app/api/reminders.py` → `app/services/reminder_service.py` (+ `app/core/scheduler.py`) ·
 > Blueprint: `reminders_bp` · **5 endpoints** · **JWT-protected**
 
-Smart, gentle reminders. A background **APScheduler** job (`ZENFLOW_SCHEDULER_ENABLED`, default on)
+Smart, gentle reminders. A background **APScheduler** job (`KOVA_SCHEDULER_ENABLED`, default on)
 polls due reminders and delivers them as an **in-app notification + Expo push**.
 
 ---

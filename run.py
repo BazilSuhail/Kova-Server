@@ -23,9 +23,9 @@ def run_development():
 
         port = int(os.environ.get('PORT', 5000))
         host = '0.0.0.0'
-        threads = int(os.environ.get("ZENFLOW_WEB_THREADS", "4"))
+        threads = int(os.environ.get("KOVA_WEB_THREADS", "4"))
 
-        print("Starting ZenFlow development server with Waitress...")
+        print("Starting Kova development server with Waitress...")
         print("✅ Using same server as production (Waitress)")
         print("🔧 Development mode - detailed logging enabled")
         print("🚀 Development server ready at:")
@@ -38,7 +38,7 @@ def run_development():
             app,
             host=host,
             port=port,
-            threads=threads,           # Tunable via ZENFLOW_WEB_THREADS
+            threads=threads,           # Tunable via KOVA_WEB_THREADS
             connection_limit=100,     # Lower connection limit for dev
             cleanup_interval=10,      # More frequent cleanup for dev
             channel_timeout=60,       # Shorter timeout for dev
@@ -51,7 +51,7 @@ def run_development():
 
 def run_flask_debug():
     """Run original Flask development server (with auto-reload)"""
-    print("Starting ZenFlow with Flask debug server...")
+    print("Starting Kova with Flask debug server...")
     print("⚠️  Development server warning will appear")
     print("🔄 Auto-reload enabled - files changes will restart server")
     app.run(debug=True, host="0.0.0.0", port=5000)
@@ -64,9 +64,9 @@ def run_production():
         # Get port from environment (Railway, Heroku, etc.) or default to 5000
         port = int(os.environ.get('PORT', 5000))
         host = '0.0.0.0'
-        threads = int(os.environ.get("ZENFLOW_WEB_THREADS", "3"))
+        threads = int(os.environ.get("KOVA_WEB_THREADS", "3"))
 
-        print("Starting ZenFlow production server...")
+        print("Starting Kova production server...")
         print("✅ No development server warnings!")
         print("🚀 Production server ready at:")
         print(f"   - Host: {host}")
@@ -82,7 +82,7 @@ def run_production():
             app,
             host=host,
             port=port,
-            threads=threads,            # Tunable via ZENFLOW_WEB_THREADS (default 3)
+            threads=threads,            # Tunable via KOVA_WEB_THREADS (default 3)
             connection_limit=1000,    # Max 1000 connections
             cleanup_interval=30,      # Cleanup every 30 seconds
             channel_timeout=120,      # 2 minute timeout
@@ -105,7 +105,7 @@ if __name__ == "__main__":
         elif sys.argv[1] == '--flask-debug' or sys.argv[1] == '-f':
             run_flask_debug()
         elif sys.argv[1] == '--help' or sys.argv[1] == '-h':
-            print("ZenFlow Server Runner")
+            print("Kova Server Runner")
             print("Usage:")
             print("  python run.py                    # Development mode with Waitress (default)")
             print("  python run.py --production       # Production mode")

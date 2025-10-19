@@ -38,7 +38,7 @@ def test_sentry_stays_inert_without_a_dsn(monkeypatch):
     stub = _StubSentry()
     monkeypatch.setattr(telemetry, "sentry_sdk", stub)
 
-    # No ZENFLOW_SENTRY_DSN → init does not arm the SDK…
+    # No KOVA_SENTRY_DSN → init does not arm the SDK…
     telemetry.init_sentry(Settings.for_testing())
     assert telemetry._active is False
     # …and reporting calls are swallowed.

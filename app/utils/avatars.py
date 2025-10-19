@@ -20,7 +20,7 @@ URL_PREFIX = "/api/users/avatars"
 
 
 def avatars_dir() -> Path:
-    """Resolve the avatar folder, honouring ``ZENFLOW_AVATAR_DIR`` when set."""
+    """Resolve the avatar folder, honouring ``KOVA_AVATAR_DIR`` when set."""
     configured = current_app.config.get("AVATAR_DIR")
     if configured:
         return Path(configured)

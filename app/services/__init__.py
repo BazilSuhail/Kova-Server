@@ -45,7 +45,7 @@ from .user_service import UserService
 from .weekly_recap_service import WeeklyRecapService
 
 # Key under which the container lives in ``app.extensions``.
-EXTENSION_KEY = "zenflow.services"
+EXTENSION_KEY = "kova.services"
 
 
 @dataclass(frozen=True)

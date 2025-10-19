@@ -176,7 +176,7 @@ Pipeline: image → **OCR.space** text → **Groq** structured task.
 |------|------|
 | `201` | the created task, **plus** `extractedText` (OCR text, echoed, not persisted) |
 | `400` | `{ "message": "Image file is required." }` \| `{ "message": "Failed to parse LLM response: …" }` |
-| `503` | `{ "message": "OCR provider is not configured" }` (no `ZENFLOW_OCR_API_KEY`) |
+| `503` | `{ "message": "OCR provider is not configured" }` (no `KOVA_OCR_API_KEY`) |
 
 ```bash
 curl -X POST http://127.0.0.1:5000/api/tasks/create/image \

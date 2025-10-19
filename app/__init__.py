@@ -101,19 +101,19 @@ def _reject_insecure_config(settings: Settings) -> None:
     """Refuse to boot in production with the built-in JWT secret.
 
     A warning buried in a log stream is easy to miss; a crash at boot is not.
-    ``ZENFLOW_ALLOW_INSECURE_JWT=1`` bypasses the check (development only).
+    ``KOVA_ALLOW_INSECURE_JWT=1`` bypasses the check (development only).
     """
     if not settings.uses_default_jwt_secret:
         return
     if settings.env == "production" and not settings.allow_insecure_jwt:
         raise RuntimeError(
             "Refusing to start in production with the built-in JWT secret. "
-            "Set ZENFLOW_JWT_SECRET to a random string of at least 32 characters "
-            "(or ZENFLOW_ALLOW_INSECURE_JWT=1 to bypass — development only)."
+            "Set KOVA_JWT_SECRET to a random string of at least 32 characters "
+            "(or KOVA_ALLOW_INSECURE_JWT=1 to bypass — development only)."
         )
     logger.warning(
         "jwt_secret_insecure_default",
-        extra={"env": settings.env, "hint": "set ZENFLOW_JWT_SECRET"},
+        extra={"env": settings.env, "hint": "set KOVA_JWT_SECRET"},
     )
 
 
