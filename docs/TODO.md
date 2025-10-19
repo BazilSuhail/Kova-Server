@@ -86,6 +86,32 @@ Work list generated from the API analysis of `app/` + `run.py`.
 - [x] Fake-Mongo test double gained `$gt/$gte/$lt/$lte` range operators
 - [x] Test suite: **121 passing**; coverage **92%**
 
+## 🌿 Sprint F — Life-Assistant MVP (done)
+
+- [x] **20/20 product features** now have server support (17 core + 3 bonus); API grew **41 → 73 endpoints**
+- [x] New surfaces: dashboard, calendar (day/week/month), mood journal + trends, reflections +
+      affirmations, progress tracker, adaptive suggestions, devices (Expo push), reminders, sync
+- [x] Task flows: auto-categorisation (local heuristic + `POST /api/tasks/<id>/categorize`),
+      smart title generator (`/suggest-title`, `/<id>/rewrite-title`),
+      camera/OCR quick-add (`POST /api/tasks/create/image` via OCR.space)
+- [x] Notes summariser `POST /api/summaries/create-from-text` (3–5 bullets; PDF path unchanged 4–9)
+- [x] Customisation `GET/PUT /api/users/profile/settings` (theme, fontSize, layout, notificationStyle)
+- [x] **Smart reminders**: APScheduler job (`app/core/scheduler.py`) delivers due reminders as
+      in-app notifications + Expo push; dead tokens auto-pruned
+- [x] **Offline sync**: `updatedAt` on every document + `POST /api/sync/pull` / `push`
+      (delta pull, last-write-wins push) + `tombstones` collection for deletions
+- [x] New collections: `mood_entries`, `reflections`, `push_devices`, `scheduled_reminders`,
+      `tombstones` (+ indexes incl. `(userId, updatedAt)` sync scans)
+- [x] Declared previously-missing runtime dep `Flask-Limiter`; added `APScheduler`
+- [x] Server-hosted **avatar catalogue**: `GET /api/users/avatars` (catalogue) +
+      `GET /api/users/avatars/<file>` (public image), selectable via `avatarId` on
+      `PUT /api/users/profile`; assets live in `app/assets/avatars`
+- [x] `DELETE /api/users/profile` now **cascades** — removes tasks, subtasks, planner,
+      summaries, notifications, mood, reflections, reminders, devices, tombstones and
+      revoked-token rows (other users untouched)
+- [x] Tests: **186 passing**; coverage **89%**; ruff + mypy clean
+- [x] Docs: 9 new section pages (11–19), refreshed root + API README, `.env.example`, client guide
+
 ## 📝 Documentation TODOs
 
 - [ ] Add copy-paste `curl` example to every single endpoint (currently per-section only)

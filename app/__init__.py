@@ -70,6 +70,9 @@ def create_app(
     app.config["PUSH_ENABLED"] = settings.push_enabled
     app.config["PUSH_URL"] = settings.push_url
     app.config["PUSH_ACCESS_TOKEN"] = settings.push_access_token
+    # Avatar catalogue source (defaults to app/assets/avatars when unset).
+    if settings.avatar_dir:
+        app.config["AVATAR_DIR"] = settings.avatar_dir
     # Reject oversized uploads (voice/PDF) before they are buffered into memory.
     app.config["MAX_CONTENT_LENGTH"] = settings.max_upload_mb * 1024 * 1024
 

@@ -1,8 +1,9 @@
 # 3. Tasks API — `/api/tasks`
 
-> File: `app/api/tasks.py` · Blueprint: `tasks_bp` · **7 endpoints** · **All JWT-protected**
+> File: `app/api/tasks.py` · Blueprint: `tasks_bp` · **11 endpoints** · **All JWT-protected**
 
-Task creation has **3 modes**: manual, natural-language (LLM), and voice (AssemblyAI + LLM).
+Task creation has **4 modes**: manual, natural-language (LLM), voice (AssemblyAI + LLM),
+and camera/scan (OCR + LLM). Manual creates are **auto-categorised** locally (no key needed).
 
 ---
 
@@ -158,4 +159,56 @@ With `?page=2&limit=20` the body becomes:
 
 **✅ Note:** deleting a task also **cascade-deletes its subtasks** (Sprint A — the
 legacy implementation left orphaned subtask documents behind). Nothing happens when
-the task does not exist or isn't yours.
+the task does not exist or isn't yours. The deletion is recorded as a sync tombstone.
+
+---
+
+## 3.8 `POST /api/tasks/create/image` — Create task from a photo (OCR)
+
+- **Auth:** 🔒 JWT · **Content-Type:** `multipart/form-data`
+- **Form field:** `file` (image) — **required**
+
+Pipeline: image → **OCR.space** text → **Groq** structured task.
+
+**Responses**
+
+| Code | Body |
+|------|------|
+| `201` | the created task, **plus** `extractedText` (OCR text, echoed, not persisted) |
+| `400` | `{ "message": "Image file is required." }` \| `{ "message": "Failed to parse LLM response: …" }` |
+| `503` | `{ "message": "OCR provider is not configured" }` (no `ZENFLOW_OCR_API_KEY`) |
+
+```bash
+curl -X POST http://127.0.0.1:5000/api/tasks/create/image \
+  -H "Authorization: Bearer <access_token>" \
+  -F "file=@notes.jpg"
+```
+
+---
+
+## 3.9 `POST /api/tasks/suggest-title` — Rewrite a title (no persist)
+
+- **Auth:** 🔒 JWT · Body: `{ "title": "buy milk tmrw" }` (**required**)
+
+Rewrites a vague title into a clear one. Uses the LLM when a key is configured, otherwise a
+local heuristic (expands `tmrw`→`tomorrow`, `mtg`→`meeting`, capitalises, collapses spaces).
+
+**Responses:** `200 { "title": "Buy milk tomorrow" }` · `400 { "message": "title is required" }`
+
+---
+
+## 3.10 `POST /api/tasks/<task_id>/categorize` — Re-derive category
+
+- **Auth:** 🔒 JWT
+- Re-derives and **persists** the task's category from a local keyword heuristic.
+
+**Responses:** `200 { "taskId": "…", "category": "finance" }` · `404 { "message": "Task not found" }`
+
+---
+
+## 3.11 `POST /api/tasks/<task_id>/rewrite-title` — Rewrite + persist title
+
+- **Auth:** 🔒 JWT
+- Rewrites the task's title (same engine as §3.9) and saves it.
+
+**Responses:** `200 { "taskId": "…", "title": "Call mom tomorrow" }` · `404 { "message": "Task not found" }`

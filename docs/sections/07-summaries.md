@@ -1,8 +1,9 @@
 # 7. Summaries API — `/api/summaries`
 
-> File: `app/api/summaries.py` · Blueprint: `summaries_bp` · **5 endpoints** · **All JWT-protected**
+> File: `app/api/summaries.py` · Blueprint: `summaries_bp` · **6 endpoints** · **All JWT-protected**
 
-Upload a **PDF** → text extraction → LLM → bullet summary (plus a derived task object).
+Two summarisation paths: **PDF** upload (§7.1, 4–9 bullets) and **raw note text**
+(§7.6, 3–5 bullets). Both persist a summary; the PDF path also returns a suggested task.
 
 ---
 
@@ -117,4 +118,33 @@ curl "http://127.0.0.1:5000/api/summaries/?page=1&limit=20" \
 ```bash
 curl -X POST http://127.0.0.1:5000/api/summaries/6890sum.../convert-to-tasks \
   -H "Authorization: Bearer <access_token>"
+```
+
+---
+
+## 7.6 `POST /api/summaries/create-from-text` — Summarise raw note text (3–5 bullets)
+
+- **Auth:** 🔒 JWT · **Content-Type:** `application/json`
+
+| Field | Type | Required | Notes |
+|-------|------|:--------:|-------|
+| `text` | string | ✅ | the raw note / transcript to condense |
+| `title` | string | ❌ | stored as `originalFileName` for the client |
+
+Unlike §7.1, this path **never fabricates a task suggestion**; it stores a
+`sourceType: "note"` summary. Persist a task later via §7.5 if desired.
+
+**Responses**
+
+| Code | Body |
+|------|------|
+| `201` | `{ "summary": { "summaryId", "sourceType": "note", "originalFileName", "summaryBullets": [...] } }` |
+| `400` | `{ "message": "text is required" }` \| `{ "message": "Summary must contain between 3 and 5 bullet points" }` |
+| `503` | `{ "message": "AI provider is not configured" }` |
+
+```bash
+curl -X POST http://127.0.0.1:5000/api/summaries/create-from-text \
+  -H "Authorization: Bearer <access_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"<long lecture transcript>","title":"Lecture 3"}'
 ```

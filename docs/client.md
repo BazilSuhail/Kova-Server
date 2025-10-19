@@ -1,14 +1,19 @@
 # ZenFlow Client Guide — Build the App
 
-Everything a client app needs to fully utilize this server: **9 screens**, every UI
-option mapped to the API it calls, and a request/response example per endpoint
-(**41/41 covered**). Endpoints are grouped by screen, not by backend blueprint.
+Everything a client app needs to fully utilize this server: **14 screens**, every UI
+option mapped to the API it calls. Endpoints are grouped by screen, not by backend blueprint.
+
+> [!IMPORTANT]
+> 📱 **Reference client:** [BazilSuhail/Zenflow-App](https://github.com/BazilSuhail/Zenflow-App) — **React Native + Expo**.
+> Point its API base URL at this server. Full per-endpoint schemas live in
+> [`README.md`](README.md) and [`sections/`](sections/).
 
 - **Base URL (local):** `http://127.0.0.1:5000` · all routes under `/api`
 - **Auth:** `Authorization: Bearer <access_token>` (JWT, **expires in 1 h**;
   refresh token valid **7 d**, rotated on every refresh)
-- **Content type:** `application/json`, except voice/PDF uploads → `multipart/form-data`
-- Full backend reference per section: [`docs/README.md`](README.md) · AI flows: [`ai-flows.md`](ai-flows.md)
+- **Content type:** `application/json`, except voice / image / PDF uploads → `multipart/form-data`
+- **Offline:** `POST /api/sync/pull` / `push` — see [`sections/19-sync.md`](sections/19-sync.md)
+- Full backend reference: [`README.md`](README.md) · AI flows: [`ai-flows.md`](ai-flows.md)
 
 ---
 
@@ -17,16 +22,21 @@ option mapped to the API it calls, and a request/response example per endpoint
 | # | Screen | Endpoints it owns |
 |---|--------|-------------------|
 | 1 | [Auth (Login / Signup)](#screen-1) | 3 |
-| 2 | [Home / Dashboard](#screen-2) | 1 (+ widgets reuse list APIs) |
-| 3 | [Tasks (+ Create sheet)](#screen-3) | 7 |
+| 2 | [Home / Dashboard](#screen-2) | 1 (`/api/dashboard/`) |
+| 3 | [Tasks (+ Create sheet)](#screen-3) | 11 |
 | 4 | [Task Detail + Subtasks](#screen-4) | 5 |
 | 5 | [Planner (day plan)](#screen-5) | 6 |
-| 6 | [Summaries (PDF library)](#screen-6) | 5 |
-| 7 | [Recaps (stats)](#screen-7) | 1 |
+| 6 | [Summaries (library)](#screen-6) | 6 |
+| 7 | [Recaps (daily + weekly)](#screen-7) | 2 |
 | 8 | [Notifications](#screen-8) | 5 |
-| 9 | [Profile & Settings](#screen-9) | 6 |
+| 9 | [Profile & Settings](#screen-9) | 10 |
+| 10 | [Calendar](#screen-10) | 1 |
+| 11 | [Mood & Journal](#screen-11) | 11 |
+| 12 | [Progress & Insights](#screen-12) | 2 |
+| 13 | [Reminders & Push](#screen-13) | 8 |
+| 14 | [Offline Sync](#screen-14) | 2 |
 | — | [Ops (no screen)](#ops) | 2 |
-| | **Total** | **41** |
+| | **Total** | **73** |
 
 ---
 
@@ -170,27 +180,32 @@ always store the returned pair. Errors: `400 "refresh_token is required"` ·
 
 | Option / Element | API | Consumes → Produces |
 |---|---|---|
-| **Today card** (done/pending tasks, mood) | `GET /api/daily-recap/` | nothing → today (UTC) summary |
+| **Today card** (task counts, streak, mood, unread) | `GET /api/dashboard/` | nothing → aggregate home payload |
 | **My tasks preview** ("next 5") | `GET /api/tasks/?page=1&limit=5` | paging → envelope *(owned by screen 3)* |
 | **Unread bell badge** | `GET /api/notifications/?unread=true&page=1&limit=5` | filter → unread feed *(screen 8)* |
 | **Week widget** (optional) | `GET /api/weekly-recap/` | nothing → 7-day totals *(screen 7)* |
 | **Quick actions:** ➕ / 🎤 / 📄 | → screens 3 & 6 | navigation only |
 | **Pull-to-refresh** | re-run the calls above | — |
 
-### `GET /api/daily-recap/`
+### `GET /api/dashboard/`
 
-No parameters — computes today (UTC) server-side.
+No parameters — one call for the whole home screen.
 
 ```json
 200 {
-  "date": "2026-10-05T00:00:00+00:00",
-  "completedTasks": ["Buy groceries"],
-  "pendingTasks": ["Finish report"],
-  "mood": "Focused"
+  "date": "2026-10-17T09:15:00+00:00",
+  "tasks": { "total": 12, "completed": 5, "pending": 7, "dueToday": 3 },
+  "todayTasks": [ { "taskId": "…", "title": "Finish report" } ],
+  "unreadNotifications": 2,
+  "nextReminders": [ { "reminderId": "…", "title": "Stand up" } ],
+  "latestMood": { "moodId": "…", "mood": "good", "score": 4 },
+  "latestSummary": { "summaryId": "…", "summaryBullets": ["…"] },
+  "streak": 3,
+  "suggestions": [ { "id": "log_mood", "title": "How are you feeling?" } ]
 }
 ```
 
-`mood` = today's planner `reflection`, else `"Not recorded"`. Errors: `401` · `500`.
+Errors: `401`. `latestMood` / `latestSummary` are `null` when empty.
 
 ---
 
@@ -308,6 +323,44 @@ answers **404** even though the task exists — ignore 404 on no-op saves.
 ```
 
 Errors: `404 "Task not found"` (missing or another user's) · `500`.
+
+---
+
+### `POST /api/tasks/create/image` — create from a photo (OCR)
+
+`multipart/form-data` with a `file` field (image). OCR (OCR.space) → LLM → task.
+
+```json
+201 {
+  "taskId": "…", "title": "Buy milk", "category": "errands",
+  "createdFrom": "image", "extractedText": "Buy milk tomorrow"
+}
+```
+
+Errors: `400 "Image file is required."` · `503 "OCR provider is not configured"`.
+
+### `POST /api/tasks/suggest-title` — rewrite a title (preview only)
+
+```json
+// request
+{ "title": "buy milk tmrw" }
+// 200
+{ "title": "Buy milk tomorrow" }
+```
+
+### `POST /api/tasks/<task_id>/categorize` — re-derive category
+
+```json
+200 { "taskId": "…", "category": "finance" }
+```
+
+### `POST /api/tasks/<task_id>/rewrite-title` — rewrite + save title
+
+```json
+200 { "taskId": "…", "title": "Call mom tomorrow" }
+```
+
+**Tip:** manual creates are **auto-categorised** server-side when you omit `category`.
 
 ---
 
@@ -583,6 +636,20 @@ Errors: `404 "Summary not found"` · `500`.
 
 ---
 
+### `POST /api/summaries/create-from-text` — summarise notes (3–5 bullets)
+
+```json
+// request
+{ "text": "<long note or transcript>", "title": "Lecture 3" }
+// 201
+{ "summary": { "summaryId": "…", "sourceType": "note",
+               "summaryBullets": ["…", "…", "…"] } }
+```
+
+Errors: `400 "text is required"` · `503 "AI provider is not configured"`.
+
+---
+
 <a id="screen-7"></a>
 
 ## 7. 📈 Recaps Screen (daily + weekly)
@@ -593,8 +660,21 @@ Errors: `404 "Summary not found"` · `500`.
 |---|---|---|
 | **Weekly tab** (7 days ending today, UTC) | `GET /api/weekly-recap/` | nothing → `{startDate, endDate, days[7], totals}` |
 | **Date picker** ("week ending …") | `GET /api/weekly-recap/?end=2026-10-05` | `end=YYYY-MM-DD` → same shape |
-| **Daily tab** (if not on Home) | `GET /api/daily-recap/` *(screen 2)* | today's summary |
+| **Daily tab** | `GET /api/daily-recap/` | nothing → today's summary |
 | **Per-day row tap** | local | jump to Planner / Tasks screens |
+
+### `GET /api/daily-recap/`
+
+```json
+200 {
+  "date": "2026-10-05T00:00:00+00:00",
+  "completedTasks": ["Buy groceries"],
+  "pendingTasks": ["Finish report"],
+  "mood": "Focused"
+}
+```
+
+`mood` = today's planner `reflection`, else `"Not recorded"`. Errors: `401` · `500`.
 
 ### `GET /api/weekly-recap/`
 
@@ -705,7 +785,9 @@ Errors: `404 "Notification not found"` · `500`.
 | **Edit name / email / avatar / prefs** | `PUT /api/users/profile` | whitelisted fields → updated profile |
 | **Change password** | `PUT /api/auth/password` | current + new password → `200` |
 | **Log out** (instant revocation) | `POST /api/auth/logout` | optional refresh token → `200` |
-| **Delete account** (destructive confirm) | `DELETE /api/users/profile` | nothing → `200`, session dies |
+| **Delete account** (destructive confirm) | `DELETE /api/users/profile` | nothing → `200`, session dies **and all owned data is cascaded** |
+| **Customise look / alerts** | `GET` + `PUT /api/users/profile/settings` | whitelisted keys → merged settings |
+| **Pick an avatar** | `GET /api/users/avatars` (`GET /api/users/avatars/<file>` renders it) | nothing → catalogue of hosted avatars |
 
 ### `GET /api/auth/me`
 
@@ -740,8 +822,43 @@ Errors: `404 "User not found"` · `500`.
 200 { "userId": "68862e...", "name": "Lorde", "...": "updated profile, password excluded" }
 ```
 
-Allowed: `name`, `email`, `profilePicture`, `preferences` (any subset).
-Errors: `400 "Email already in use"` · `400 "User not found or no changes made"` · `500`.
+Allowed: `name`, `email`, `profilePicture`, `preferences` (any subset) — or `avatarId`
+to pick a server-hosted avatar (see the avatar picker below).
+Errors: `400 "Email already in use"` · `400 "Unknown avatar"` ·
+`400 "User not found or no changes made"` · `500`.
+
+### `GET` / `PUT /api/users/profile/settings`
+
+```json
+200 { "theme": "light", "notificationsEnabled": true }
+```
+
+```json
+// PUT — only these keys are accepted; unknown keys are ignored
+{ "theme": "dark", "fontSize": "large", "layout": "compact", "notificationStyle": "gentle" }
+// 200 → merged settings object
+```
+
+Accepted: `theme`, `fontSize`, `layout`, `notificationStyle`, `notificationsEnabled`, `language`.
+
+### `GET /api/users/avatars` — hosted avatar picker
+
+```json
+200 { "avatars": [
+  { "id": "avatar1", "filename": "avatar1.svg", "url": "/api/users/avatars/avatar1.svg" },
+  { "id": "avatar2", "filename": "avatar2.svg", "url": "/api/users/avatars/avatar2.svg" }
+] }
+```
+
+```json
+// pick one — send avatarId in PUT /api/users/profile
+{ "avatarId": "avatar1" }
+// 200 → "profilePicture": "/api/users/avatars/avatar1.svg"
+```
+
+Render with `API_BASE + avatar.url` — the image route (`GET /api/users/avatars/<file>`)
+is **public**, so an `<Image>` needs no Authorization header.
+Errors: `400 "Unknown avatar"`.
 
 ### `PUT /api/auth/password`
 
@@ -779,8 +896,180 @@ Errors: `401` if the access token is already revoked.
 ```
 
 Errors: `404 "User not found"` · `500`.
-⚠️ Deletes only the user document — tasks/subtasks/planner/summaries are
-**orphaned** (no cascade). Clear data first if that matters to you.
+✅ **Cascade:** deleting the account removes **everything it owns** — tasks,
+subtasks, planner, summaries, notifications, mood entries, reflections, reminders,
+push devices, tombstones and revoked-token rows. Other users' data is untouched.
+Irreversible — confirm in the UI.
+
+---
+
+### `GET /api/users/profile/settings`
+
+```json
+200 { "theme": "light", "notificationsEnabled": true }
+```
+
+### `PUT /api/users/profile/settings`
+
+```json
+// request — only these keys are accepted; unknown keys are ignored
+{ "theme": "dark", "fontSize": "large", "layout": "compact", "notificationStyle": "gentle" }
+// 200 → merged settings object
+```
+
+Accepted keys: `theme`, `fontSize`, `layout`, `notificationStyle`, `notificationsEnabled`, `language`.
+
+---
+
+<a id="screen-10"></a>
+
+## 10. 📅 Calendar Screen (day / week / month)
+
+| Option / Element | API | Consumes → Produces |
+|---|---|---|
+| View switch | `GET /api/calendar/?view=day|week|month&date=YYYY-MM-DD` | view + anchor → per-day tasks + planner |
+| Day cell tap | local | jump to Planner / Tasks |
+
+### `GET /api/calendar/`
+
+```json
+200 {
+  "view": "week", "start": "2026-10-05", "end": "2026-10-11",
+  "days": [
+    { "date": "2026-10-05", "tasks": [ … ], "planner": { "plannerId": "…" } }
+  ]
+}
+```
+
+`week` starts **Monday**; `month` spans the anchor's month; each day buckets tasks by
+`dueDate` and attaches that day's planner (`null` if none).
+Errors: `400 "view must be one of: day, week, month"` · `400 "date must be a YYYY-MM-DD date"` · `401`.
+
+---
+
+<a id="screen-11"></a>
+
+## 11. 💚 Mood & Journal Screen
+
+| Option / Element | API | Consumes → Produces |
+|---|---|---|
+| Mood slider + save | `POST /api/mood/` | `{mood, score, energy, note, tags}` → entry |
+| History list | `GET /api/mood/` | paging → feed (newest first) |
+| Trend chart | `GET /api/mood/trends?days=30` | window → series + averages + streak |
+| "What should I do today?" | `POST /api/mood/suggestions` | `{mood, energy}` → load guidance |
+| Delete an entry | `DELETE /api/mood/<mood_id>` | id → deleted |
+| Open one entry | `GET /api/mood/<mood_id>` | id → entry |
+| Today's prompt + affirmation | `GET /api/reflections/today` | nothing → prompt + affirmation + entry |
+| Write reflection | `POST /api/reflections/` | `{text, mood}` → entry (upsert by date) |
+| Reflection history | `GET /api/reflections/` | nothing → list |
+| Open one reflection | `GET /api/reflections/<reflection_id>` | id → entry |
+| Delete a reflection | `DELETE /api/reflections/<reflection_id>` | id → removed |
+
+### `GET /api/mood/trends?days=30`
+
+```json
+200 {
+  "range": { "start": "2026-09-18", "end": "2026-10-17", "days": 30 },
+  "averageScore": 3.75,
+  "distribution": { "good": 7, "okay": 5 },
+  "series": [ { "date": "2026-10-17", "score": 4.0, "entries": 2 } ],
+  "streak": 3
+}
+```
+
+### `POST /api/mood/suggestions`
+
+```json
+// request (both optional — falls back to the latest logged mood)
+{ "mood": "awful", "energy": 1 }
+// 200
+{ "score": 1, "energy": 1, "suggestedLoad": "light", "message": "Protect your energy today…" }
+```
+
+`score` 1–2 → `light`, 3 → `balanced`, 4–5 → `stretch`
+(mood labels map to scores: `awful`=1 … `great`/`amazing`=5).
+
+---
+
+<a id="screen-12"></a>
+
+## 12. 📈 Progress & Insights Screen
+
+| Option / Element | API | Consumes → Produces |
+|---|---|---|
+| Stats + streaks + badges | `GET /api/progress/` | nothing → totals, streak, loadBalance, achievements |
+| Suggestion cards | `GET /api/suggestions/` | nothing → adaptive suggestions |
+
+### `GET /api/progress/`
+
+```json
+200 {
+  "totals": { "tasks": 24, "completedTasks": 15, "pendingTasks": 9, "completionRate": 0.63 },
+  "streak": { "current": 3, "longest": 6 },
+  "loadBalance": [ { "day": "Mon", "completed": 3, "pending": 1 } ],
+  "achievements": [ { "id": "ten_done", "label": "Completed 10 tasks",
+                      "earned": true, "progress": 10, "target": 10 } ],
+  "activeDays": 8
+}
+```
+
+An **active day** = a completed task, a mood entry, or a reflection.
+
+---
+
+<a id="screen-13"></a>
+
+## 13. ⏰ Reminders & Push Screen
+
+| Option / Element | API | Consumes → Produces |
+|---|---|---|
+| Register this device | `POST /api/devices/` | `{expoPushToken, platform}` → device |
+| List devices | `GET /api/devices/` | nothing → devices |
+| Unregister device | `DELETE /api/devices/<device_id>` | id → removed |
+| Create reminder | `POST /api/reminders/` | `{title, fireAt, message}` → reminder |
+| List reminders | `GET /api/reminders/?status=pending\|sent` | filter → list |
+| Upcoming (48 h) | `GET /api/reminders/upcoming?hours=48` | window → list |
+| Get one reminder | `GET /api/reminders/<reminder_id>` | id → reminder |
+| Delete reminder | `DELETE /api/reminders/<reminder_id>` | id → removed |
+
+### `POST /api/reminders/`
+
+```json
+// request — fireAt is a date (→ 09:00 UTC) or an ISO datetime
+{ "title": "Stand up", "message": "Take a break", "fireAt": "2026-10-20T09:00:00Z" }
+// 201
+{ "reminderId": "…", "title": "Stand up", "status": "pending", "fireAt": "2026-10-20T09:00:00+00:00" }
+```
+
+When a reminder is due the server creates an in-app notification **and** pushes to every
+registered device; dead tokens are pruned automatically.
+Errors: `400 "title and fireAt are required"` · `400 "fireAt must be an ISO date or datetime"`.
+
+---
+
+<a id="screen-14"></a>
+
+## 14. 🔌 Offline Sync
+
+| Option / Element | API | Consumes → Produces |
+|---|---|---|
+| First sync / pull changes | `POST /api/sync/pull` | `{since?}` → changed docs + deletions |
+| Push local edits | `POST /api/sync/push` | `{changes:{…}, deletions:[…]}` → applied counts |
+
+### `POST /api/sync/pull`
+
+```json
+// request: omit `since` for a full sync
+{ "since": "2026-10-17T09:00:00+00:00" }
+// 200
+{ "serverTime": "2026-10-17T09:15:00+00:00", "full": false,
+  "tasks": [ … ], "subtasks": [ … ], "planner": [], "summaries": [],
+  "notifications": [], "mood": [], "reflections": [], "reminders": [],
+  "deleted": [ { "collection": "tasks", "docId": "…" } ] }
+```
+
+**Conflict resolution is last-write-wins** by `updatedAt`. Full details:
+[`sections/19-sync.md`](sections/19-sync.md).
 
 ---
 
@@ -797,11 +1086,12 @@ Errors: `404 "User not found"` · `500`.
 
 ## ✅ Coverage
 
-All **41 endpoints** are assigned to a screen above:
+All **75 endpoints** are assigned to a screen above:
 
-`3 (auth) + 1 (home) + 7 (tasks) + 5 (subtasks) + 6 (planner) + 5 (summaries)
-+ 1 (recaps) + 5 (notifications) + 6 (profile) + 2 (ops) = 41`
+`3 (auth) + 1 (dashboard) + 11 (tasks) + 5 (subtasks) + 6 (planner) + 1 (calendar)
++ 6 (summaries) + 11 (mood & journal) + 2 (progress & insights) + 8 (reminders & push)
++ 2 (recaps) + 5 (notifications) + 10 (profile & settings) + 2 (sync) + 2 (ops) = 75`
 
-**Minimum viable app:** 6 screens (Auth, Tasks + detail, Planner, Summaries,
-Notifications, Profile — recaps as dashboard widgets).
-**Full utilization:** all 9 screens.
+**Minimum viable app:** 6 screens (Auth, Dashboard, Tasks + detail, Planner,
+Notifications, Profile).
+**Full utilization:** all 14 screens.

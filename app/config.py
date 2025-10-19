@@ -87,6 +87,8 @@ class Settings:
     # In-process APScheduler that fires due reminders. Off in tests.
     scheduler_enabled: bool = True
     scheduler_interval_seconds: int = 30
+    # Folder holding the selectable avatar files (default: ``app/assets/avatars``).
+    avatar_dir: str | None = None
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -165,6 +167,7 @@ class Settings:
             scheduler_interval_seconds=int(
                 _env("ZENFLOW_SCHEDULER_INTERVAL_SECONDS", default="30") or "30"
             ),
+            avatar_dir=_env("ZENFLOW_AVATAR_DIR") or None,
         )
 
     @classmethod

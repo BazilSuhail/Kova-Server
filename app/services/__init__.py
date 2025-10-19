@@ -85,14 +85,28 @@ def build_services(db: Database) -> Services:
     devices = DeviceRepository(db)
     reminders = ReminderRepository(db)
     tombstones = TombstoneRepository(db)
+    blocklist = TokenBlocklistRepository(db)
 
     notification_service = NotificationService(notifications, tombstones)
     progress = ProgressService(tasks, moods, reflections)
     suggestions = SuggestionService(tasks, moods, reflections, reminders)
 
     return Services(
-        auth=AuthService(users, TokenBlocklistRepository(db)),
-        users=UserService(users),
+        auth=AuthService(users, blocklist),
+        users=UserService(
+            users,
+            tasks,
+            subtasks,
+            planners,
+            summaries,
+            notifications,
+            moods,
+            reflections,
+            devices,
+            reminders,
+            tombstones,
+            blocklist,
+        ),
         tasks=TaskService(tasks, subtasks, tombstones),
         subtasks=SubtaskService(subtasks, tasks, tombstones),
         notifications=notification_service,
