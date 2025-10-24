@@ -19,7 +19,7 @@ def connect_mongo(mongo_uri: str) -> MongoClient:
     """
     client: MongoClient = MongoClient(mongo_uri, serverSelectionTimeoutMS=5000)
     client.admin.command("ping")
-    logger.info("mongodb connected")
+    logger.info("MongoDB connected")
     return client
 
 
@@ -83,4 +83,4 @@ def create_indexes(db: Database) -> None:
     db.summaries.create_index([("userId", 1), ("updatedAt", 1)])
     db.notifications.create_index([("userId", 1), ("updatedAt", 1)])
     db.subtasks.create_index([("taskId", 1), ("updatedAt", 1)])
-    logger.info("mongodb indexes ensured")
+    logger.info("Database indexes ready")

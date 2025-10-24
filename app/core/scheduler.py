@@ -61,7 +61,7 @@ def init_scheduler(app: Flask, settings: Settings) -> BackgroundScheduler | None
     app.extensions[EXTENSION_KEY] = scheduler
     atexit.register(lambda: scheduler.shutdown(wait=False) if scheduler.running else None)
     logger.info(
-        "scheduler_started",
+        "Reminder scheduler started",
         extra={"interval_seconds": settings.scheduler_interval_seconds},
     )
     return scheduler

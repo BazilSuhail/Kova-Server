@@ -48,7 +48,7 @@ def create_app(
     """
     if settings is None:
         settings = Settings.from_env()
-    configure_logging(settings.log_level)
+    configure_logging(settings.log_level, settings.log_format)
     init_sentry(settings)
     _reject_insecure_config(settings)
 
@@ -91,7 +91,7 @@ def create_app(
     register_blueprints(app)
     init_scheduler(app, settings)
     logger.info(
-        "application_ready",
+        "Application ready",
         extra={"env": settings.env, "blueprints": len(app.blueprints)},
     )
     return app
@@ -112,8 +112,8 @@ def _reject_insecure_config(settings: Settings) -> None:
             "(or KOVA_ALLOW_INSECURE_JWT=1 to bypass — development only)."
         )
     logger.warning(
-        "jwt_secret_insecure_default",
-        extra={"env": settings.env, "hint": "set KOVA_JWT_SECRET"},
+        "Using the built-in JWT secret — set KOVA_JWT_SECRET before deploying",
+        extra={"env": settings.env},
     )
 
 
@@ -153,7 +153,9 @@ def _register_request_context(app: Flask) -> None:
         if duration_ms is not None:
             # Standard timing header so clients/proxies can see real app latency.
             response.headers["Server-Timing"] = f"app;dur={duration_ms}"
-        logger.info(
+        # Access logging is DEBUG: at INFO the stream stays focused on startup
+        # and real problems. Set KOVA_LOG_LEVEL=DEBUG to bring requests back.
+        logger.debug(
             "http_request",
             extra={
                 "method": request.method,

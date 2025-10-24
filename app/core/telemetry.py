@@ -21,7 +21,7 @@ def init_sentry(settings: Settings) -> None:
     """Start the Sentry SDK when a DSN is present; otherwise stay inert."""
     global _active
     if not settings.sentry_dsn:
-        logger.info("sentry_disabled", extra={"reason": "no KOVA_SENTRY_DSN"})
+        logger.debug("Sentry disabled (no KOVA_SENTRY_DSN)")
         return
     sentry_sdk.init(
         dsn=settings.sentry_dsn,
@@ -32,7 +32,7 @@ def init_sentry(settings: Settings) -> None:
         send_default_pii=False,
     )
     _active = True
-    logger.info("sentry_enabled", extra={"environment": settings.env})
+    logger.info("Sentry error tracking enabled", extra={"environment": settings.env})
 
 
 def capture_exception(error: BaseException) -> None:

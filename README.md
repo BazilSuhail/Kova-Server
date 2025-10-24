@@ -49,7 +49,7 @@ and keeps everything working offline.
 - 📈 **Progress tracker** — streaks, completion stats, load balance, achievements.
 - 🔌 **Offline-first sync** — delta pull/push with `updatedAt` cursors and deletion tombstones.
 - 🧩 **Clean architecture** — routes → services → repositories, with a service container and no ORM.
-- 🔒 **Hardened** — JWT rotation + instant revocation, rate limiting, security headers, structured JSON logs.
+- 🔒 **Hardened** — JWT rotation + instant revocation, rate limiting, security headers, clean console logs (JSON opt-in).
 - ✅ **Well tested** — 186 tests against an in-memory Mongo, 89% coverage, ruff + mypy clean.
 
 ### Why "Kova"?
@@ -295,7 +295,7 @@ kova-server/
 │   ├── db.py                     # Mongo connection + index bootstrap
 │   │
 │   ├── core/                     # cross-cutting primitives
-│   │   ├── logging.py            # JSON logs + per-request correlation id
+│   │   ├── logging.py            # clean console UI (text/JSON) + correlation id
 │   │   ├── exceptions.py         # AppError hierarchy (400/401/404/413/415/503)
 │   │   ├── responses.py          # api_response() — the one serializer
 │   │   ├── query.py              # pagination helpers
@@ -389,7 +389,7 @@ MongoDB collections (indexes auto-created at boot; every `*Id` is uniquely index
 ## 📌 Notes & Configuration
 
 - **MongoDB must be reachable at boot** (5s fail-fast); indexes are created automatically.
-- **Logs** are structured JSON with `X-Request-ID` correlation ids (echoed in responses).
+- **Logs** print a clean emoji console UI by default (one line per event, `X-Request-ID` correlation ids echoed in responses); set `KOVA_LOG_FORMAT=json` for structured JSON in a log aggregator.
 - **Security headers** on every response: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`.
 - **Rate limiting** per IP (default `600/min`, auth routes `60/min`) → JSON `429`; health probes exempt.
 - **Uploads** capped via `KOVA_MAX_UPLOAD_MB` (default 16 MB) → JSON `413`.

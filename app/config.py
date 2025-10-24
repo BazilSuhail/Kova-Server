@@ -58,6 +58,8 @@ class Settings:
     groq_llm_url: str
     # --- Sprint A hardening knobs (all optional, sensible defaults) ---
     cors_origins: tuple[str, ...] = ("*",)
+    # Console renderer: "text" (emoji UI, default) or "json" for log aggregators.
+    log_format: str = "text"
     max_upload_mb: int = 16
     allow_insecure_jwt: bool = False
     # --- Sprint B: refresh-token lifetime (7 days) ---
@@ -104,6 +106,7 @@ class Settings:
                 _env("KOVA_JWT_EXPIRES_SECONDS", default="3600") or "3600"
             ),
             log_level=(_env("KOVA_LOG_LEVEL", "LOG_LEVEL", default="INFO") or "INFO").upper(),
+            log_format=(_env("KOVA_LOG_FORMAT", default="text") or "text").lower(),
             assemblyai_api_key=_env("KOVA_ASSEMBLYAI_API_KEY", "ASSEMBLYAI_API_KEY"),
             groq_api_key=_env("KOVA_GROQ_API_KEY", "GROQ_API_KEY"),
             groq_llm_url=_env("KOVA_GROQ_LLM_URL", "GROQ_LLM_URL", default=DEFAULT_GROQ_LLM_URL)
