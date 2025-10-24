@@ -111,7 +111,7 @@ Work list generated from the API analysis of `app/` + `run.py`.
       revoked-token rows (other users untouched)
 - [x] Tests: **186 passing**; coverage **89%**; ruff + mypy clean
 - [x] Docs: 9 new section pages (11–19), refreshed root + API README, `.env.example`, client guide
-      (5-tab navigation + stacks, every screen → endpoint, "Zenith Aura" design tokens)
+      (5-tab navigation + stacks, every screen → endpoint, Tailwind + Uniwind styling rules)
 
 ## 📝 Documentation TODOs
 

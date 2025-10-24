@@ -2,7 +2,7 @@
 
 Everything the **Kova** app (React Native + Expo) needs from this server: a **5-tab
 bottom bar + per-tab stack** navigation plan, every screen mapped to its endpoint, and
-the **"Zenith Aura"** design tokens. Endpoints are grouped by screen, not by backend blueprint.
+the Tailwind + Uniwind styling rules. Endpoints are grouped by screen, not by backend blueprint.
 
 > [!IMPORTANT]
 > 📱 **Reference client:** [Kova](https://github.com/BazilSuhail/Zenflow-App) — **React Native + Expo**.
@@ -10,7 +10,7 @@ the **"Zenith Aura"** design tokens. Endpoints are grouped by screen, not by bac
 > [`README.md`](README.md) and [`sections/`](sections/).
 
 - **Navigation:** bottom bar (**Home · Tasks · Plan · Insights · Profile**) + a stack per tab — [🧭 Navigation & Screen Plan](#-navigation--screen-plan)
-- **Theme:** "Zenith Aura" dual-mode palette — [🎨 Design Tokens](#-design-tokens--zenith-aura)
+- **Theme:** Tailwind + Uniwind, plain utilities with `dark:` variants — [🎨 Design Tokens](#-design-tokens--tailwind--uniwind)
 - **Base URL (local):** `http://127.0.0.1:5000` · all routes under `/api`
 - **Auth:** `Authorization: Bearer <access_token>` (JWT, **expires in 1 h**;
   refresh token valid **7 d**, rotated on every refresh)
@@ -125,42 +125,43 @@ Bar styling: `surface` background, `border` hairline on top, **active `ai`**, in
 
 ---
 
-## 🎨 Design Tokens — "Zenith Aura"
+## 🎨 Design Tokens — Tailwind + Uniwind
 
-Dual-mode palette. Resolve **every** colour through a token so dark/light follow the
-system (or the user's [Settings](#screen-9)).
+The reference client does **not** ship a custom palette. It uses plain Tailwind v4 utilities
+through [Uniwind](https://uniwind.dev), with `dark:` variants for the dual-mode look, so
+light/dark follows the system (or the account's stored preference). Nothing is defined in
+`global.css` beyond `@import 'tailwindcss'` and `@import 'uniwind'`.
 
-| Token | Dark | Light | Used for |
-|-------|------|-------|----------|
-| `bg` | `#0F172A` | `#F8FAFC` | screen canvas, headers |
-| `surface` | `#1E293B` | `#FFFFFF` | cards, tab bar, modals, sheets |
-| `ai` | `#8B5CF6` | `#7C3AED` | AI badges/buttons, FAB, active tab, avatar ring, suggestions |
-| `success` | `#10B981` | `#059669` | checkmarks, streaks, progress bars, completed chips |
-| `textPrimary` | `#F1F5F9` | `#0F172A` | titles, key numbers |
-| `textSecondary` | `#94A3B8` | `#64748B` | subtitles, timestamps, captions |
+| Role | Utility | Used for |
+|------|---------|----------|
+| canvas | `bg-slate-100 dark:bg-slate-950` | screen background |
+| surface | `bg-white dark:bg-slate-900` | cards, tab bar, modals, sheets |
+| border | `border-slate-200 dark:border-slate-800` | dividers, input strokes |
+| AI / brand | `violet-600` (`dark: violet-400`) | AI badges/buttons, FAB, active tab, suggestions |
+| success | `emerald-600` (`dark: emerald-400`) | checkmarks, streaks, progress bars, completed chips |
+| danger | `red-600` / `red-400` | delete, errors, overdue tasks |
+| warning | `amber-600` / `amber-400` | due-soon, low energy |
+| text | `text-slate-900 dark:text-slate-100` | titles, key numbers |
+| muted text | `text-slate-500 dark:text-slate-400` | subtitles, timestamps, captions |
+| scrim | `bg-slate-900/60` | modal / sheet backdrop |
 
-**Extension tokens** — not in the core palette but required for a pro UI (add, don't replace):
+The few APIs that need a real colour value in JS (`@expo/vector-icons` `color` props, chart
+strokes, `Animated` views) read it from a single hook — `useThemeColors()` in
+`src/theme/colors.ts` — which returns the same six values per mode.
 
-| Token | Dark | Light | Used for |
-|-------|------|-------|----------|
-| `danger` | `#EF4444` | `#DC2626` | delete, errors, overdue tasks |
-| `warning` | `#F59E0B` | `#D97706` | due-soon, low energy |
-| `border` | `#334155` | `#E2E8F0` | dividers, input strokes |
-| `overlay` | `rgba(15,23,42,.6)` | `rgba(15,23,42,.4)` | modal scrim |
+**Accent discipline** (keeps violet meaningful)
 
-**Accent discipline** (keeps `ai` meaningful)
-
-- `ai` = "smart / automation" only → AI Capture, Voice, Scan, Title Assistant, Category
+- violet = "smart / automation" only → AI Capture, Voice, Scan, Title Assistant, Category
   Picker, [Suggestions](#screen-12), New Summary, active tab, FAB.
-- `success` = reward / completion → [Home](#screen-2) streak, [Progress](#screen-12),
+- emerald = reward / completion → [Home](#screen-2) streak, [Progress](#screen-12),
   checkboxes, completion %, [Journal](#screen-11) affirmations.
-- Everything else stays neutral (`bg` / `surface` + text tokens).
+- Everything else stays neutral (`slate` surfaces + text tokens).
 
 **Navigation chrome**
 
-- Tab bar: `surface` bg, `border` hairline on top, active label+icon `ai`, inactive `textSecondary`.
-- Headers: transparent on `bg`, title `textPrimary`, back chevron `ai`.
-- Sheets / modals: `surface`, drag handle `textSecondary`, scrim `overlay`.
+- Tab bar: `surface` bg, `border` hairline on top, active label+icon violet, inactive muted.
+- Headers: transparent on the canvas, title in the text token, back chevron violet.
+- Sheets / modals: `surface`, drag handle muted, scrim `bg-slate-900/60`.
 - Status bar: light-content (dark mode) / dark-content (light mode).
 
 ---

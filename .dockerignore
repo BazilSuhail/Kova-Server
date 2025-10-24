@@ -1,0 +1,21 @@
+# Keep the Docker build context small and free of local state / secrets.
+.venv
+venv
+__pycache__
+*.py[cod]
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+coverage.xml
+htmlcov
+.git
+.github
+*.log
+.env
+.env.*
+docs
+*.md
+docker-compose.yml
+Dockerfile
+.dockerignore
