@@ -53,7 +53,7 @@ avatars, categorisation).
                 │               │
         ┌───────▼──────┐  ┌─────▼─────────────────────────────┐
         │   MongoDB    │  │ External providers (all optional) │
-        │  collections │  │ Groq · AssemblyAI · OCR.space ·   │
+        │  collections │  │ Groq · AssemblyAI · Google Vision │
         │  + indexes   │  │ Expo Push                         │
         └──────────────┘  └───────────────────────────────────┘
 ```
@@ -75,7 +75,7 @@ avatars, categorisation).
 | `app/utils/` | External integrations (Groq/AssemblyAI/OCR/PDF/Expo) + helpers. |
 | `app/core/` | Logging, exceptions, responses, pagination, validation, Sentry, scheduler. |
 | `app/assets/avatars/` | Avatar catalogue served at `GET /api/users/avatars/<file>`. |
-| `tests/` | 186 offline tests + `support/fake_mongo.py` in-memory double. |
+| `tests/` | 188 offline tests + `support/fake_mongo.py` in-memory double. |
 | `docs/` | API reference (`docs/README.md`, `docs/sections/`), client + AI-flow guides. |
 
 ### Endpoint inventory (75)
@@ -100,7 +100,7 @@ Run everything exactly as CI does:
 pip install -r requirements-dev.txt
 ruff check app tests run.py     # lint  (config in pyproject.toml)
 mypy                            # types (79 source files)
-python -m pytest                # 186 tests, gate: ≥85% coverage (pytest.ini)
+python -m pytest                # 188 tests, gate: ≥85% coverage (pytest.ini)
 ```
 
 | Gate | Tool | Result |
@@ -197,8 +197,8 @@ Only two variables are effectively mandatory in production:
 
 Common optional knobs (full list in `.env.example`): `PORT`, `KOVA_ENV`,
 `KOVA_WEB_THREADS`, `KOVA_CORS_ORIGINS`, `KOVA_SCHEDULER_ENABLED`,
-`KOVA_GROQ_API_KEY`, `KOVA_ASSEMBLYAI_API_KEY`, `KOVA_OCR_API_KEY`,
-`KOVA_SENTRY_DSN`, `KOVA_RATELIMIT_*`, `KOVA_MAX_UPLOAD_MB`. Missing AI keys
+`KOVA_GROQ_API_KEY`, `KOVA_ASSEMBLYAI_API_KEY`, `KOVA_OCR_API_KEY`
+(Google Cloud Vision), `KOVA_SENTRY_DSN`, `KOVA_RATELIMIT_*`, `KOVA_MAX_UPLOAD_MB`. Missing AI keys
 never crash the app — those endpoints answer `503` instead.
 
 ### Production checklist

@@ -10,6 +10,7 @@ from bson import ObjectId
 
 from ..core.exceptions import NotFoundError
 from ..core.query import PageParams, page_payload
+from ..core.timezone import local_now
 from ..repositories.mood_repository import MoodRepository
 
 # Label → 1..5 score, used when the client does not send an explicit score.
@@ -44,6 +45,7 @@ class MoodService:
     def create(self, user_id: str, data: dict[str, Any]) -> dict[str, Any]:
         """Log a mood entry (route validated ``mood`` presence)."""
         logged_at = datetime.now(UTC)
+        local_day = local_now().date().isoformat()
         mood = str(data["mood"]).strip()
         score = data.get("score")
         if not isinstance(score, int) or not 1 <= score <= 5:
@@ -61,7 +63,7 @@ class MoodService:
             "note": data.get("note", ""),
             "tags": tags if isinstance(tags, list) else [],
             "loggedAt": logged_at.isoformat(),
-            "date": logged_at.date().isoformat(),
+            "date": local_day,
             "createdAt": logged_at.isoformat(),
         }
         return self._moods.insert(document)
@@ -81,11 +83,9 @@ class MoodService:
 
     def trends(self, user_id: str, *, days: int = 30) -> dict[str, Any]:
         """Aggregate the last ``days`` of mood logs into a trend payload."""
-        end = datetime.now(UTC).date()
+        end = local_now().date()
         start = end - timedelta(days=days - 1)
-        start_prefix = f"{start.isoformat()}T00:00:00"
-        end_prefix = f"{(end + timedelta(days=1)).isoformat()}T00:00:00"
-        entries = self._moods.find_in_window(user_id, start_prefix, end_prefix)
+        entries = self._moods.find_in_window(user_id, start.isoformat(), end.isoformat())
 
         by_day: dict[str, list[int]] = {}
         distribution: dict[str, int] = {}

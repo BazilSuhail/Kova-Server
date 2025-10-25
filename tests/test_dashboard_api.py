@@ -11,6 +11,10 @@ EXPECTED_KEYS = {
     "latestSummary",
     "streak",
     "suggestions",
+    "todayProgress",
+    "weeklyCompletion",
+    "moodTrend",
+    "recentSummaries",
 }
 
 
@@ -45,3 +49,24 @@ def test_dashboard_is_empty_but_valid_for_new_user(client, auth):
     assert body["todayTasks"] == []
     assert body["latestMood"] is None
     assert body["latestSummary"] is None
+
+
+def test_dashboard_home_chart_fields(client, auth):
+    from datetime import UTC, datetime
+
+    headers = auth()
+    today = datetime.now(UTC).date().isoformat()
+    created = client.post(
+        "/api/tasks/", headers=headers, json={"title": "Done", "dueDate": today}
+    ).get_json()
+    client.post("/api/tasks/", headers=headers, json={"title": "Open", "dueDate": today})
+    client.put(f"/api/tasks/{created['taskId']}", headers=headers, json={"isCompleted": True})
+    client.post("/api/mood/", headers=headers, json={"mood": "good"})
+
+    body = client.get("/api/dashboard/", headers=headers).get_json()
+    assert body["todayProgress"] == {"total": 2, "completed": 1, "pending": 1}
+    assert len(body["weeklyCompletion"]) == 7
+    assert body["weeklyCompletion"][-1] == {"date": today, "completed": 1, "total": 2}
+    assert len(body["moodTrend"]) == 7
+    assert body["moodTrend"][-1]["entries"] == 1
+    assert body["recentSummaries"] == []

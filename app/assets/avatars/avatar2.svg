@@ -1,5 +1,41 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Kova avatar 2">
-  <rect width="256" height="256" rx="48" fill="#0EA5E9"/>
-  <circle cx="128" cy="98" r="42" fill="#FFFFFF" fill-opacity="0.95"/>
-  <path d="M46 234c0-45 37-70 82-70s82 25 82 70z" fill="#FFFFFF" fill-opacity="0.95"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Cyberpunk avatar">
+  <rect width="256" height="256" rx="48" fill="#123F36"/>
+
+  <!-- Body / jacket -->
+  <path d="M46 234c0-45 37-70 82-70s82 25 82 70z" fill="#1F2937"/>
+
+  <!-- Head -->
+  <circle cx="128" cy="98" r="42" fill="#374151"/>
+
+  <!-- Hair -->
+  <path d="M86 90c0-26 18-46 42-46s42 20 42 46c-4-14-14-24-24-26-4 6-10 10-18 10s-14-4-18-10c-10 2-20 12-24 26z" fill="#111827"/>
+
+  <!-- Visor / AR glasses -->
+  <rect x="86" y="92" width="84" height="18" rx="6" fill="#06B6D4"/>
+  <rect x="86" y="92" width="84" height="18" rx="6" fill="none" stroke="#22D3EE" stroke-width="2"/>
+
+  <!-- Visor scanlines -->
+  <line x1="92" y1="98" x2="164" y2="98" stroke="#123F36" stroke-width="1" opacity="0.4"/>
+  <line x1="92" y1="102" x2="164" y2="102" stroke="#123F36" stroke-width="1" opacity="0.4"/>
+
+  <!-- Eyes behind visor -->
+  <ellipse cx="110" cy="101" rx="6" ry="5" fill="#22D3EE"/>
+  <ellipse cx="146" cy="101" rx="6" ry="5" fill="#22D3EE"/>
+
+  <!-- Glowing pupils -->
+  <circle cx="110" cy="101" r="2.5" fill="#123F36"/>
+  <circle cx="146" cy="101" r="2.5" fill="#123F36"/>
+
+  <!-- Neon ear piece -->
+  <rect x="72" y="96" width="8" height="20" rx="3" fill="#F472B6"/>
+  <rect x="176" y="96" width="8" height="20" rx="3" fill="#F472B6"/>
+
+  <!-- Neon collar -->
+  <rect x="96" y="158" width="64" height="6" rx="3" fill="#06B6D4"/>
+  <rect x="96" y="168" width="64" height="4" rx="2" fill="#F472B6"/>
+
+  <!-- Chest circuit lines -->
+  <path d="M108 200h10v10h16v-10h14" fill="none" stroke="#22D3EE" stroke-width="2"/>
+  <circle cx="108" cy="200" r="2" fill="#22D3EE"/>
+  <circle cx="148" cy="200" r="2" fill="#22D3EE"/>
 </svg>

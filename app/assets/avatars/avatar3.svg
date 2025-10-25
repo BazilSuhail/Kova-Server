@@ -1,5 +1,51 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Kova avatar 3">
-  <rect width="256" height="256" rx="48" fill="#10B981"/>
-  <circle cx="128" cy="98" r="42" fill="#FFFFFF" fill-opacity="0.95"/>
-  <path d="M46 234c0-45 37-70 82-70s82 25 82 70z" fill="#FFFFFF" fill-opacity="0.95"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Samurai avatar">
+  <rect width="256" height="256" rx="48" fill="#123F36"/>
+
+  <!-- Body / armor (mid purple) -->
+  <path d="M46 234c0-45 37-70 82-70s82 25 82 70z" fill="#7C5CBF"/>
+
+  <!-- Head -->
+  <circle cx="128" cy="98" r="42" fill="#7C5CBF"/>
+
+  <!-- Helmet (kabuto) dome -->
+  <path d="M86 92c0-32 19-54 42-54s42 22 42 54c0-9-6-16-14-18 4-11 2-21-6-27-6 8-14 12-22 12s-16-4-22-12c-8 6-10 16-6 27-8 2-14 9-14 18z" fill="#9B7DD6"/>
+
+  <!-- Helmet ridge highlight -->
+  <path d="M128 40c14 4 26 22 28 44-6-10-16-18-28-20-12 2-22 10-28 20 2-22 14-40 28-44z" fill="#B9A0E8"/>
+
+  <!-- Helmet crest (maedate) -->
+  <path d="M118 42l10-18 10 18-10 5z" fill="#F2C94C"/>
+
+  <!-- Face mask (menpo) -->
+  <path d="M92 98c0 20 16 36 36 36s36-16 36-36v8c0 24-16 42-36 42s-36-18-36-42z" fill="#6A4DA8"/>
+
+  <!-- Eyes -->
+  <ellipse cx="110" cy="100" rx="7" ry="6" fill="#F5EEFF"/>
+  <ellipse cx="146" cy="100" rx="7" ry="6" fill="#F5EEFF"/>
+  <circle cx="112" cy="101" r="3" fill="#3B1F6E"/>
+  <circle cx="148" cy="101" r="3" fill="#3B1F6E"/>
+
+  <!-- Armor plates (gold) -->
+  <rect x="92" y="168" width="72" height="8" rx="3" fill="#F2C94C"/>
+  <rect x="92" y="180" width="72" height="8" rx="3" fill="#F2C94C"/>
+  <rect x="92" y="192" width="72" height="8" rx="3" fill="#F2C94C"/>
+
+  <!-- Plate lacing (deep purple) -->
+  <line x1="104" y1="168" x2="104" y2="200" stroke="#4A2E85" stroke-width="2"/>
+  <line x1="128" y1="168" x2="128" y2="200" stroke="#4A2E85" stroke-width="2"/>
+  <line x1="152" y1="168" x2="152" y2="200" stroke="#4A2E85" stroke-width="2"/>
+
+  <!-- Shoulder guards (sode) -->
+  <path d="M48 178c8-8 20-10 30-6l-4 22c-10-4-20-4-26-2z" fill="#9B7DD6"/>
+  <path d="M208 178c-8-8-20-10-30-6l4 22c10-4 20-4 26-2z" fill="#9B7DD6"/>
+  <path d="M52 186c6-4 14-5 22-3" stroke="#F2C94C" stroke-width="2" fill="none"/>
+  <path d="M204 186c-6-4-14-5-22-3" stroke="#F2C94C" stroke-width="2" fill="none"/>
+
+  <!-- Katana across back -->
+  <line x1="178" y1="152" x2="220" y2="76" stroke="#EDE6F7" stroke-width="5" stroke-linecap="round"/>
+  <line x1="178" y1="152" x2="184" y2="142" stroke="#4A2E85" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="220" cy="76" r="4" fill="#F2C94C"/>
+
+  <!-- Belt / obi -->
+  <rect x="90" y="160" width="76" height="6" rx="3" fill="#4A2E85"/>
 </svg>

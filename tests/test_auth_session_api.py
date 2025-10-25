@@ -196,3 +196,18 @@ def test_change_password_rejects_weak_or_missing_new_password(client):
 
     missing = client.put("/api/auth/password", headers=auth, json={})
     assert missing.status_code == 400
+
+
+def test_jwt_failures_are_401_with_message(client, auth):
+    """Malformed/wrong-type tokens must look like auth errors so clients refresh."""
+    signup = client.post(
+        "/api/auth/signup",
+        json={"name": "J", "email": "jwt@example.com", "password": "secret123"},
+    ).get_json()
+    for token in ("garbage", signup["refresh_token"]):
+        response = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
+        assert response.status_code == 401
+        assert "message" in response.get_json()
+    missing = client.get("/api/auth/me")
+    assert missing.status_code == 401
+    assert "message" in missing.get_json()

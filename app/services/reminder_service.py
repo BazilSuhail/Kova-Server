@@ -8,6 +8,7 @@ from typing import Any
 from bson import ObjectId
 
 from ..core.exceptions import NotFoundError, ValidationError
+from ..core.timezone import request_tz
 from ..repositories.device_repository import DeviceRepository
 from ..repositories.reminder_repository import ReminderRepository
 from ..utils.push_client import send_push
@@ -20,13 +21,14 @@ def _normalize_fire_at(raw: Any) -> str:
         raise ValidationError("fireAt must be an ISO date or datetime")
     text = raw.strip()
     if len(text) == 10:
-        text = f"{text}T09:00:00+00:00"  # date-only → 9am UTC default
+        text = f"{text}T09:00:00"  # date-only → 9am caller-local default
     try:
         parsed = datetime.fromisoformat(text)
     except ValueError as exc:
         raise ValidationError("fireAt must be an ISO date or datetime") from exc
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=UTC)
+        # Naive times are wall-clock in the caller's zone (X-Timezone, else UTC).
+        parsed = parsed.replace(tzinfo=request_tz())
     return parsed.astimezone(UTC).isoformat()
 
 

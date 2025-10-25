@@ -5,6 +5,7 @@ import io
 
 import app.services.summary_service as summary_module
 import app.services.task_service as task_module
+import app.utils.ocr_utils as ocr_module
 
 # --- feature 4: smart categorisation ---------------------------------------
 
@@ -142,6 +143,59 @@ def test_create_task_from_image_503_when_ocr_key_missing(client, auth):
     )
     assert response.status_code == 503
     assert response.get_json() == {"message": "OCR provider is not configured"}
+
+
+def test_create_task_from_image_rejects_image_over_1mb(client, auth, app):
+    app.config["OCR_API_KEY"] = "test-key"
+    response = client.post(
+        "/api/tasks/create/image",
+        headers=auth(),
+        data={"file": (io.BytesIO(b"x" * (1024 * 1024 + 1)), "big.jpg")},
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 400
+    assert response.get_json() == {"message": "Image must be 1 MB or smaller."}
+
+
+class _FakeOcrSpaceResponse:
+    def __init__(self, payload):
+        self._payload = payload
+        self.content = b""
+        self.status_code = 200
+
+    def raise_for_status(self):
+        return None
+
+    def json(self):
+        return self._payload
+
+
+def test_ocr_utils_calls_ocr_space_with_key_and_file(app, monkeypatch):
+    app.config["OCR_API_KEY"] = "test-key"
+    captured = {}
+
+    def fake_post(url, **kwargs):
+        captured["url"] = url
+        captured.update(kwargs)
+        return _FakeOcrSpaceResponse(
+            {"IsErroredOnProcessing": False, "ParsedResults": [{"ParsedText": "Buy milk\n"}]}
+        )
+
+    monkeypatch.setattr(ocr_module.requests, "post", fake_post)
+    with app.app_context():
+        text = ocr_module.extract_text_from_image(
+            io.BytesIO(b"image-bytes"), filename="note.png"
+        )
+
+    assert text == "Buy milk"
+    assert captured["url"].endswith("/parse/image")
+    assert captured["data"]["apikey"] == "test-key"
+    assert captured["data"]["language"] == "eng"
+    files = captured["files"]
+    assert "filename" in files
+    sent_filename, sent_content = files["filename"]
+    assert sent_filename == "note.png"
+    assert sent_content == b"image-bytes"
 
 
 # --- feature 15: customisation settings ------------------------------------

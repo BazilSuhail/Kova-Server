@@ -1,11 +1,11 @@
 """User profile reads/updates/deletes — the account **and everything it owns**."""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import IO, TYPE_CHECKING, Any
 
 from ..core.exceptions import NotFoundError, ValidationError
 from ..repositories.user_repository import UserRepository
-from ..utils.avatars import resolve_avatar_id
+from ..utils.avatars import delete_upload, resolve_avatar_id, save_upload
 
 if TYPE_CHECKING:
     from ..repositories.device_repository import DeviceRepository
@@ -88,8 +88,20 @@ class UserService:
             fields["email"], user_id
         ):
             raise ValidationError("Email already in use")
+        # Missing user keeps the legacy 400 below, so no 404 lookup here.
+        previous = (self._users.find_by_user_id(user_id) or {}).get("profilePicture")
         if self._users.update_fields(user_id, fields) == 0:
             raise ValidationError("User not found or no changes made")
+        if "profilePicture" in fields and fields["profilePicture"] != previous:
+            delete_upload(user_id, previous)
+        return self.get_profile(user_id)
+
+    def upload_avatar(self, user_id: str, stream: IO[bytes]) -> dict[str, Any]:
+        """Store an uploaded photo as ``profilePicture``; drop the previous upload."""
+        previous = self.get_profile(user_id).get("profilePicture")
+        url = save_upload(user_id, stream)
+        self._users.update_fields(user_id, {"profilePicture": url})
+        delete_upload(user_id, previous)
         return self.get_profile(user_id)
 
     def delete_profile(self, user_id: str) -> dict[str, int]:
@@ -131,6 +143,7 @@ class UserService:
             if repository is not None:
                 deleted[name] = repository.delete_many({"userId": user_id}).deleted_count
 
+        delete_upload(user_id, self.get_profile(user_id).get("profilePicture"))
         self._users.delete_by_user_id(user_id)
         return deleted
 

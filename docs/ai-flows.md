@@ -1,11 +1,12 @@
-# 🤖 AI Flows — Voice, Natural Language & Summaries
+# 🤖 AI Flows — Voice, Natural Language, Image & Summaries
 
-Three endpoints lean on external AI providers. This page documents the full
+Four endpoints lean on external AI providers. This page documents the full
 pipeline, configuration, and — most importantly — **which HTTP status each
 failure produces**, so clients can branch correctly.
 
 **Providers:** [Groq](https://console.groq.com) (chat completions) ·
-[AssemblyAI](https://www.assemblyai.com) (speech-to-text)
+[AssemblyAI](https://www.assemblyai.com) (speech-to-text) ·
+[Google Cloud Vision](https://cloud.google.com/vision) (OCR)
 
 ---
 
@@ -56,6 +57,27 @@ extracted text
                           persist it via POST /api/summaries/<id>/convert-to-tasks
 ```
 
+## 4. Image → task (OCR)
+
+`POST /api/tasks/create/image` (`multipart/form-data`, field `file`, **≤ 1 MB**)
+
+```
+image bytes (capped at 1 MB, rejected with 400 before any network call)
+  │  extract_text_from_image()      app/utils/ocr_utils.py
+  ▼
+Google Cloud Vision  POST /v1/images:annotate?key=KOVA_OCR_API_KEY
+  │  feature: DOCUMENT_TEXT_DETECTION
+  │  → fullTextAnnotation.text (textAnnotations[0] fallback)
+  ▼
+extracted text
+  │  generate_task_fields_from_llm()   app/utils/llm_utils.py
+  ▼
+{title, description, category, dueDate}
+  │  TaskService.create_from_image()
+  ▼
+201 + task document (createdFrom = "image", plus `extractedText`, not persisted)
+```
+
 Subtask generation (`POST /api/subtasks/create`) also calls Groq:
 task description → **3–8 ordered sub-task strings** (over-delivery is truncated
 to 8; fewer than 3 is an error).
@@ -70,8 +92,11 @@ All Groq calls share one transport: `app/utils/groq_client.py`.
 |---------|---------|---------|
 | `KOVA_GROQ_API_KEY` | *(unset)* | Groq key — **required for all LLM flows** |
 | `KOVA_ASSEMBLYAI_API_KEY` | *(unset)* | AssemblyAI key — required for voice |
+| `KOVA_OCR_API_KEY` | *(unset)* | Google Cloud Vision API key — required for image OCR |
+| `KOVA_OCR_URL` | `https://vision.googleapis.com/v1/images:annotate` | Vision endpoint override |
+| `KOVA_OCR_TIMEOUT_SECONDS` | `60` | Per-request Vision timeout |
 | `KOVA_GROQ_LLM_URL` | Groq chat-completions URL | Override for proxies/tests |
-| `KOVA_GROQ_MODEL` | `llama-3.3-70b-versatile` | Any current Groq production model |
+| `KOVA_GROQ_MODEL` | `qwen/qwen3.8-27b` | Any current Groq production model |
 | `KOVA_LLM_TIMEOUT_SECONDS` | `60` | Per-request Groq timeout |
 
 ---
@@ -82,7 +107,10 @@ Every AI flow guards **before** any network I/O when a key is missing.
 
 | Failure | Status | Body | Applies to |
 |---------|--------|------|------------|
-| Provider API key not configured | `503` | `{"message": "AI provider is not configured"}` | all flows |
+| Provider API key not configured | `503` | `{"message": "AI provider is not configured"}` | natural-language, voice, summary, subtasks |
+| OCR key not configured | `503` | `{"message": "OCR provider is not configured"}` | image |
+| Missing image / empty image / image over 1 MB | `400` | `Image file is required.` \| `Image file is empty.` \| `Image must be 1 MB or smaller.` | image |
+| Vision transport/HTTP/empty-text failure | `500` | `{"message": "Internal server error"}` | image |
 | Groq transport/parse failure | `400` | `{"message": "API request failed: …"}` | natural-language *(legacy contract)* |
 | Groq transport/parse failure | `500` | `{"message": "Internal server error"}` | voice, summary *(legacy contract)* |
 | Groq transport/parse failure | `502` | `{"message": "Subtask generation failed"}` | subtasks *(fixed in Sprint D — was wrongly 404)* |

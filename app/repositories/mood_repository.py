@@ -28,13 +28,13 @@ class MoodRepository(BaseRepository):
         return self.find_one({"moodId": mood_id, "userId": user_id})
 
     def find_in_window(
-        self, user_id: str, start_prefix: str, end_prefix: str
+        self, user_id: str, start_day: str, end_day: str
     ) -> list[dict[str, Any]]:
-        """Entries logged within ``[start_prefix, end_prefix)`` (ISO strings)."""
+        """Entries whose local ``date`` is within ``[start_day, end_day]`` (YYYY-MM-DD)."""
         return self.find_many(
             {
                 "userId": user_id,
-                "loggedAt": {"$gte": start_prefix, "$lt": end_prefix},
+                "date": {"$gte": start_day, "$lte": end_day},
             },
             sort=("loggedAt", 1),
         )

@@ -6,6 +6,7 @@ from typing import Any
 
 from bson import ObjectId
 
+from ..core.exceptions import NotFoundError
 from ..core.query import PageParams, page_payload
 from ..repositories.summary_repository import SummaryRepository
 from ..repositories.task_repository import TaskRepository
@@ -93,6 +94,12 @@ class SummaryService:
             user_id, skip=page.skip, limit=page.limit
         )
         return page_payload(items, total, page)
+
+    def get(self, summary_id: str, user_id: str) -> dict[str, Any]:
+        summary = self._summaries.find_by_id_for_user(summary_id, user_id)
+        if summary is None:
+            raise NotFoundError("Summary not found")
+        return summary
 
     def convert_to_task(
         self, summary_id: str, user_id: str

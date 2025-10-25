@@ -17,7 +17,7 @@ class UserRepository(BaseRepository):
 
     def find_by_user_id(self, user_id: str) -> dict[str, Any] | None:
         """Fetch a profile with the password hash projected out at the source."""
-        return self.find_one({"userId": user_id}, {"password": 0})
+        return self.find_one({"userId": user_id}, {"password": 0, "passwordReset": 0})
 
     def find_with_password(self, user_id: str) -> dict[str, Any] | None:
         """Full document — only for credential checks (password change)."""

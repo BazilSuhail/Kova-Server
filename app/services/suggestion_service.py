@@ -7,9 +7,10 @@ them safe to explain to the user and trivial to test.
 from __future__ import annotations
 
 from collections import Counter
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 
+from ..core.timezone import local_now
 from ..repositories.mood_repository import MoodRepository
 from ..repositories.reflection_repository import ReflectionRepository
 from ..repositories.reminder_repository import ReminderRepository
@@ -34,7 +35,7 @@ class SuggestionService:
         self._reminders = reminders
 
     def get(self, user_id: str) -> dict[str, Any]:
-        now = datetime.now(UTC)
+        now = local_now()
         today = now.date().isoformat()
         tasks = self._tasks.find_all(user_id)
         moods = self._moods.find_for_user(user_id, limit=7)

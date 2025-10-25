@@ -166,17 +166,19 @@ the task does not exist or isn't yours. The deletion is recorded as a sync tombs
 ## 3.8 `POST /api/tasks/create/image` — Create task from a photo (OCR)
 
 - **Auth:** 🔒 JWT · **Content-Type:** `multipart/form-data`
-- **Form field:** `file` (image) — **required**
+- **Form field:** `file` (image, **≤ 1 MB**) — **required**
 
-Pipeline: image → **OCR.space** text → **Groq** structured task.
+Pipeline: image → **Google Cloud Vision** (`DOCUMENT_TEXT_DETECTION`) text → **Groq** structured task.
+
+Oversized or empty uploads are rejected **before** any provider call — nothing is sent to Google/Groq.
 
 **Responses**
 
 | Code | Body |
 |------|------|
 | `201` | the created task, **plus** `extractedText` (OCR text, echoed, not persisted) |
-| `400` | `{ "message": "Image file is required." }` \| `{ "message": "Failed to parse LLM response: …" }` |
-| `503` | `{ "message": "OCR provider is not configured" }` (no `KOVA_OCR_API_KEY`) |
+| `400` | `{ "message": "Image file is required." }` \| `{ "message": "Image file is empty." }` \| `{ "message": "Image must be 1 MB or smaller." }` \| `{ "message": "Failed to parse LLM response: …" }` |
+| `503` | `{ "message": "OCR provider is not configured" }` (no `KOVA_OCR_API_KEY`) \| `{ "message": "AI provider is not configured" }` (no `KOVA_GROQ_API_KEY`) |
 
 ```bash
 curl -X POST http://127.0.0.1:5000/api/tasks/create/image \

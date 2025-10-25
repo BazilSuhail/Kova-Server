@@ -57,7 +57,7 @@ Work list generated from the API analysis of `app/` + `run.py`.
 ## 🤖 Sprint D — AI Features (done)
 
 - [x] Fixed **hard-coded decommissioned Groq model** (`llama3-70b-8192` → configurable
-      `KOVA_GROQ_MODEL`, default `llama-3.3-70b-versatile`) — all three AI flows were
+      `KOVA_GROQ_MODEL`, default `qwen/qwen3.8-27b`) — all three AI flows were
       failing against live Groq
 - [x] Shared Groq transport (`app/utils/groq_client.py`) — one place for URL, model,
       timeout (`KOVA_LLM_TIMEOUT_SECONDS`), key guard, and response envelope
@@ -93,7 +93,7 @@ Work list generated from the API analysis of `app/` + `run.py`.
       affirmations, progress tracker, adaptive suggestions, devices (Expo push), reminders, sync
 - [x] Task flows: auto-categorisation (local heuristic + `POST /api/tasks/<id>/categorize`),
       smart title generator (`/suggest-title`, `/<id>/rewrite-title`),
-      camera/OCR quick-add (`POST /api/tasks/create/image` via OCR.space)
+      camera/OCR quick-add (`POST /api/tasks/create/image` via Google Cloud Vision)
 - [x] Notes summariser `POST /api/summaries/create-from-text` (3–5 bullets; PDF path unchanged 4–9)
 - [x] Customisation `GET/PUT /api/users/profile/settings` (theme, fontSize, layout, notificationStyle)
 - [x] **Smart reminders**: APScheduler job (`app/core/scheduler.py`) delivers due reminders as

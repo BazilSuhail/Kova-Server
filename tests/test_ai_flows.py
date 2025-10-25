@@ -20,6 +20,8 @@ from tests.support.fake_mongo import FakeMongoClient
 class _FakeResponse:
     """Minimal stand-in for a successful Groq chat-completions response."""
 
+    status_code = 200
+
     def __init__(self, content: str) -> None:
         self._content = content
 
@@ -94,6 +96,32 @@ def test_nlp_task_created_from_stubbed_llm(app, client, auth, monkeypatch):
     body = response.get_json()
     assert body["title"] == "Buy milk"
     assert body["createdFrom"] == "natural-language"
+
+
+def test_nlp_task_dueDate_override_takes_precedence(app, client, auth, monkeypatch):
+    """A client-supplied dueDate must win over the LLM-extracted one."""
+    app.config["GROQ_API_KEY"] = "test-key"
+    _stub_groq(
+        monkeypatch,
+        json.dumps(
+            {
+                "title": "Submit report",
+                "description": "Quarterly figures.",
+                "category": "work",
+                "dueDate": "2026-10-06",
+                "createdFrom": "auto",
+            }
+        ),
+    )
+    response = client.post(
+        "/api/tasks/create/natural-language",
+        headers=auth(),
+        json={"prompt": "submit report by Friday", "dueDate": "2026-12-25"},
+    )
+    assert response.status_code == 201
+    body = response.get_json()
+    assert body["title"] == "Submit report"
+    assert body["dueDate"] == "2026-12-25", "override should take precedence over LLM"
 
 
 # --- Voice flow ------------------------------------------------------------

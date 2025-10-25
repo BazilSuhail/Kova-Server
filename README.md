@@ -50,7 +50,7 @@ and keeps everything working offline.
 - 🔌 **Offline-first sync** — delta pull/push with `updatedAt` cursors and deletion tombstones.
 - 🧩 **Clean architecture** — routes → services → repositories, with a service container and no ORM.
 - 🔒 **Hardened** — JWT rotation + instant revocation, rate limiting, security headers, clean console logs (JSON opt-in).
-- ✅ **Well tested** — 186 tests against an in-memory Mongo, 89% coverage, ruff + mypy clean.
+- ✅ **Well tested** — 188 tests against an in-memory Mongo, 89% coverage, ruff + mypy clean.
 
 ### Why "Kova"?
 
@@ -243,7 +243,7 @@ a bare array without them, a `{items, pagination}` envelope with them.
                 │               │
         ┌───────▼──────┐  ┌─────▼─────────────────────────────┐
         │   MongoDB    │  │ External providers (all optional) │
-        │ collections  │  │ Groq · AssemblyAI · OCR.space ·   │
+        │ collections  │  │ Groq · AssemblyAI · Google Vision │
         │ + indexes    │  │ Expo Push                          │
         └──────────────┘  └───────────────────────────────────┘
                 ▲
@@ -347,7 +347,7 @@ kova-server/
 
 ```bash
 pip install -r requirements-dev.txt
-python -m pytest              # 186 tests + coverage gate (fails under 85%)
+python -m pytest              # 188 tests + coverage gate (fails under 85%)
 ruff check app tests run.py   # lint — must be clean
 mypy                          # type check — must be clean
 ```

@@ -6,10 +6,11 @@ round-trips.
 """
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, timedelta
+from datetime import date, datetime, timedelta
 from typing import Any
 
 from ..core.exceptions import ValidationError
+from ..core.timezone import local_now
 from ..repositories.planner_repository import PlannerRepository
 from ..repositories.task_repository import TaskRepository
 
@@ -18,7 +19,7 @@ _VIEWS = ("day", "week", "month")
 
 def _parse_date(raw: str | None) -> date:
     if raw is None:
-        return datetime.now(UTC).date()
+        return local_now().date()
     try:
         return datetime.fromisoformat(raw[:10]).date()
     except ValueError as exc:

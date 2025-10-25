@@ -6,9 +6,10 @@ writes, so it can never drift from the task/mood/journal data.
 from __future__ import annotations
 
 from collections import Counter
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
+from ..core.timezone import local_now
 from ..repositories.mood_repository import MoodRepository
 from ..repositories.reflection_repository import ReflectionRepository
 from ..repositories.task_repository import TaskRepository
@@ -87,7 +88,7 @@ class ProgressService:
     @staticmethod
     def _streak(active_days: set[str]) -> int:
         streak = 0
-        cursor = datetime.now(UTC).date()
+        cursor = local_now().date()
         while cursor.isoformat() in active_days:
             streak += 1
             cursor -= timedelta(days=1)
@@ -115,7 +116,7 @@ class ProgressService:
     @staticmethod
     def _load_balance(tasks: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Completed vs pending per weekday, based on ``dueDate`` (last 7 days)."""
-        end = datetime.now(UTC).date()
+        end = local_now().date()
         start = end - timedelta(days=6)
         completed: Counter[str] = Counter()
         pending: Counter[str] = Counter()

@@ -1,5 +1,58 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Kova avatar 6">
-  <rect width="256" height="256" rx="48" fill="#8B5CF6"/>
-  <circle cx="128" cy="98" r="42" fill="#FFFFFF" fill-opacity="0.95"/>
-  <path d="M46 234c0-45 37-70 82-70s82 25 82 70z" fill="#FFFFFF" fill-opacity="0.95"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" role="img" aria-label="Professor avatar">
+  <rect width="256" height="256" rx="48" fill="#123F36"/>
+
+  <!-- Body / tweed jacket -->
+  <path d="M46 234c0-45 37-70 82-70s82 25 82 70z" fill="#8B6B3A"/>
+
+  <!-- Jacket lapels / inner shirt -->
+  <path d="M108 164l20 30 20-30c-6 4-14 6-20 6s-14-2-20-6z" fill="#F5EFE0"/>
+  <path d="M112 168l16 26 16-26c-6 2-10 3-16 3s-10-1-16-3z" fill="#8B2E3E"/>
+
+  <!-- Bow tie -->
+  <path d="M120 172l8 5 8-5-8-5z" fill="#8B2E3E"/>
+  <circle cx="128" cy="172" r="2.5" fill="#F5EFE0"/>
+
+  <!-- Head -->
+  <circle cx="128" cy="98" r="42" fill="#D9A87C"/>
+
+  <!-- Hair (grey, receding) -->
+  <path d="M86 92c0-26 18-46 42-46s42 20 42 46c-2-12-6-20-12-24-4 6-14 8-30 8s-26-2-30-8c-6 4-10 12-12 24z" fill="#B8B8B8"/>
+
+  <!-- Side hair tufts -->
+  <path d="M86 92c0-8 2-16 6-22 2 8 2 16 0 24z" fill="#B8B8B8"/>
+  <path d="M170 92c0-8-2-16-6-22-2 8-2 16 0 24z" fill="#B8B8B8"/>
+
+  <!-- Round glasses -->
+  <circle cx="110" cy="98" r="13" fill="none" stroke="#3A2A1A" stroke-width="3"/>
+  <circle cx="146" cy="98" r="13" fill="none" stroke="#3A2A1A" stroke-width="3"/>
+  <line x1="123" y1="98" x2="133" y2="98" stroke="#3A2A1A" stroke-width="3"/>
+
+  <!-- Eye lenses glint -->
+  <circle cx="110" cy="96" r="9" fill="#EAF4FF" opacity="0.6"/>
+  <circle cx="146" cy="96" r="9" fill="#EAF4FF" opacity="0.6"/>
+
+  <!-- Eyes behind glasses -->
+  <circle cx="110" cy="98" r="3" fill="#3A2A1A"/>
+  <circle cx="146" cy="98" r="3" fill="#3A2A1A"/>
+
+  <!-- Eyebrows (grey) -->
+  <path d="M100 86c4-3 12-3 16 0" stroke="#B8B8B8" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <path d="M140 86c4-3 12-3 16 0" stroke="#B8B8B8" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+  <!-- Mustache -->
+  <path d="M118 116c2 3 6 4 10 4s8-1 10-4c-4 1-6 2-10 2s-6-1-10-2z" fill="#B8B8B8"/>
+
+  <!-- Smile -->
+  <path d="M118 122c4 3 8 4 10 4s6-1 10-4" stroke="#8B5E3C" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+  <!-- Jacket buttons -->
+  <circle cx="128" cy="188" r="3" fill="#3A2A1A"/>
+  <circle cx="128" cy="202" r="3" fill="#3A2A1A"/>
+
+  <!-- Pocket square -->
+  <path d="M160 180l10 2-4 8-8-4z" fill="#F5EFE0"/>
+
+  <!-- Book / lecture notes in hand -->
+  <rect x="168" y="196" width="26" height="32" rx="2" fill="#8B2E3E" transform="rotate(8 181 212)"/>
+  <rect x="172" y="200" width="18" height="24" rx="1" fill="#F5EFE0" transform="rotate(8 181 212)"/>
 </svg>

@@ -80,3 +80,31 @@ def test_list_summaries_paging_returns_envelope(client, auth, monkeypatch):
     assert len(body["items"]) == 2
     assert body["pagination"]["total"] == 3
     assert body["pagination"]["totalPages"] == 2
+
+
+def test_get_summary_returns_own_summary(client, auth, monkeypatch):
+    headers = auth()
+    summary_id = _create_summary(client, headers, monkeypatch)
+
+    response = client.get(f"/api/summaries/{summary_id}", headers=headers)
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["summaryId"] == summary_id
+    assert body["summaryBullets"] == ["Bullet one", "Bullet two"]
+    listed = client.get("/api/summaries/", headers=headers).get_json()
+    assert body == listed[0]
+
+
+def test_get_summary_returns_404_when_missing(client, auth):
+    response = client.get("/api/summaries/missing-id", headers=auth())
+    assert response.status_code == 404
+    assert response.get_json() == {"message": "Summary not found"}
+
+
+def test_get_summary_returns_404_for_other_users_summary(client, auth, monkeypatch):
+    summary_id = _create_summary(client, auth(), monkeypatch)
+    other = auth(email="other@example.com")
+
+    response = client.get(f"/api/summaries/{summary_id}", headers=other)
+    assert response.status_code == 404
+    assert response.get_json() == {"message": "Summary not found"}

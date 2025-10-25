@@ -7,6 +7,7 @@ from typing import Any
 from bson import ObjectId
 
 from ..core.exceptions import NotFoundError
+from ..core.timezone import local_now
 from ..repositories.reflection_repository import ReflectionRepository
 from ..utils.affirmations import affirmation_for, prompt_for
 
@@ -18,7 +19,7 @@ class ReflectionService:
 
     def today(self, user_id: str, day: str | None = None) -> dict[str, Any]:
         """Today's prompt + affirmation, plus the entry if already written."""
-        target = day or datetime.now(UTC).date().isoformat()
+        target = day or local_now().date().isoformat()
         return {
             "date": target,
             "prompt": prompt_for(target),
@@ -29,7 +30,7 @@ class ReflectionService:
     def log(self, user_id: str, data: dict[str, Any]) -> dict[str, Any]:
         """Create or replace today's (or ``data['date']``'s) reflection entry."""
         now = datetime.now(UTC)
-        target = data.get("date") or now.date().isoformat()
+        target = data.get("date") or local_now().date().isoformat()
         existing = self._reflections.find_by_date(user_id, target)
         fields = {
             "text": data["text"],

@@ -480,7 +480,7 @@ Errors: `404 "Task not found"` (missing or another user's) · `500`.
 
 ### `POST /api/tasks/create/image` — create from a photo (OCR)
 
-`multipart/form-data` with a `file` field (image). OCR (OCR.space) → LLM → task.
+`multipart/form-data` with a `file` field (image, **max 1 MB**). Google Cloud Vision (OCR) → LLM → task.
 
 ```json
 201 {
@@ -489,7 +489,7 @@ Errors: `404 "Task not found"` (missing or another user's) · `500`.
 }
 ```
 
-Errors: `400 "Image file is required."` · `503 "OCR provider is not configured"`.
+Errors: `400 "Image file is required." | "Image file is empty." | "Image must be 1 MB or smaller."` · `503 "OCR provider is not configured"`.
 
 ### `POST /api/tasks/suggest-title` — rewrite a title (preview only)
 

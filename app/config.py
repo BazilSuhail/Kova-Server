@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 DEFAULT_JWT_SECRET = "kasnkdjnaskjdfnskdjf6454sdf"
 DEFAULT_MONGO_URI = "mongodb://localhost:27017/kova"
 DEFAULT_GROQ_LLM_URL = "https://api.groq.com/openai/v1/chat/completions"
+# OCR.space endpoint (API key via KOVA_OCR_API_KEY).
 DEFAULT_OCR_URL = "https://api.ocr.space/parse/image"
 DEFAULT_PUSH_URL = "https://exp.host/--/api/v2/push/send"
 
@@ -72,7 +73,7 @@ class Settings:
     sentry_dsn: str | None = None
     sentry_traces_sample_rate: float = 0.0
     # --- Sprint D: AI provider knobs ---
-    groq_model: str = "llama-3.3-70b-versatile"
+    groq_model: str = "qwen/qwen3.8-27b"
     llm_timeout_seconds: int = 60
     # --- Sprint E: performance ---
     compress_enabled: bool = True
@@ -91,6 +92,14 @@ class Settings:
     scheduler_interval_seconds: int = 30
     # Folder holding the selectable avatar files (default: ``app/assets/avatars``).
     avatar_dir: str | None = None
+    # Folder for user-uploaded avatar photos (default: ``<instance>/avatar_uploads``).
+    avatar_upload_dir: str | None = None
+    # --- Password-reset mail (stdlib smtplib); unset host = mail disabled ---
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+    mail_from: str | None = None
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -139,8 +148,8 @@ class Settings:
             sentry_traces_sample_rate=float(
                 _env("KOVA_SENTRY_TRACES_SAMPLE_RATE", default="0") or "0"
             ),
-            groq_model=_env("KOVA_GROQ_MODEL", default="llama-3.3-70b-versatile")
-            or "llama-3.3-70b-versatile",
+            groq_model=_env("KOVA_GROQ_MODEL", default="qwen/qwen3.8-27b")
+            or "qwen/qwen3.8-27b",
             llm_timeout_seconds=int(
                 _env("KOVA_LLM_TIMEOUT_SECONDS", default="60") or "60"
             ),
@@ -171,6 +180,12 @@ class Settings:
                 _env("KOVA_SCHEDULER_INTERVAL_SECONDS", default="30") or "30"
             ),
             avatar_dir=_env("KOVA_AVATAR_DIR") or None,
+            avatar_upload_dir=_env("KOVA_AVATAR_UPLOAD_DIR") or None,
+            smtp_host=_env("KOVA_SMTP_HOST", "SMTP_HOST") or None,
+            smtp_port=int(_env("KOVA_SMTP_PORT", "SMTP_PORT", default="587") or "587"),
+            smtp_user=_env("KOVA_SMTP_USER", "SMTP_USER") or None,
+            smtp_password=_env("KOVA_SMTP_PASSWORD", "SMTP_PASSWORD") or None,
+            mail_from=_env("KOVA_MAIL_FROM", "MAIL_FROM") or None,
         )
 
     @classmethod

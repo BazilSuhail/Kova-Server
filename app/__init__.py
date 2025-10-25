@@ -73,6 +73,13 @@ def create_app(
     # Avatar catalogue source (defaults to app/assets/avatars when unset).
     if settings.avatar_dir:
         app.config["AVATAR_DIR"] = settings.avatar_dir
+    if settings.avatar_upload_dir:
+        app.config["AVATAR_UPLOAD_DIR"] = settings.avatar_upload_dir
+    app.config["SMTP_HOST"] = settings.smtp_host
+    app.config["SMTP_PORT"] = settings.smtp_port
+    app.config["SMTP_USER"] = settings.smtp_user
+    app.config["SMTP_PASSWORD"] = settings.smtp_password
+    app.config["MAIL_FROM"] = settings.mail_from
     # Reject oversized uploads (voice/PDF) before they are buffered into memory.
     app.config["MAX_CONTENT_LENGTH"] = settings.max_upload_mb * 1024 * 1024
 

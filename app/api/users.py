@@ -4,7 +4,7 @@ from __future__ import annotations
 from flask import Blueprint, Response, request, send_from_directory
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from ..core.exceptions import NotFoundError
+from ..core.exceptions import NotFoundError, ValidationError
 from ..core.responses import api_response
 from ..services import get_services
 from ..utils import avatars
@@ -36,6 +36,17 @@ def delete_profile() -> Response:
     return api_response({"message": "User deleted"}, 200)
 
 
+@users_bp.route("/profile/avatar", methods=["POST"])
+@jwt_required()
+def upload_avatar() -> Response:
+    """Store an uploaded photo (multipart ``file``) as the caller's avatar."""
+    upload = request.files.get("file")
+    if upload is None:
+        raise ValidationError("An image file is required")
+    updated = get_services().users.upload_avatar(get_jwt_identity(), upload.stream)
+    return api_response(updated, 200)
+
+
 @users_bp.route("/profile/settings", methods=["GET"])
 @jwt_required()
 def get_settings() -> Response:
@@ -57,6 +68,19 @@ def update_settings() -> Response:
 def list_avatars() -> Response:
     """Catalogue of selectable, server-hosted avatars (feature 15)."""
     return api_response({"avatars": avatars.list_avatars()}, 200)
+
+
+@users_bp.route("/avatars/uploads/<filename>", methods=["GET"])
+def get_uploaded_avatar(filename: str) -> Response:
+    """Serve one user-uploaded avatar (public, like the catalogue images).
+
+    Names are server-generated and unguessable; anything not matching that
+    exact shape is a 404 before the filesystem is touched.
+    """
+    path = avatars.upload_file(filename)
+    if path is None:
+        raise NotFoundError("Avatar not found")
+    return send_from_directory(str(path.parent), path.name, max_age=86400)
 
 
 @users_bp.route("/avatars/<path:filename>", methods=["GET"])

@@ -50,6 +50,15 @@ def list_summaries() -> Response:
     return api_response(summaries, 200)
 
 
+@summaries_bp.route("/<summary_id>", methods=["GET"])
+@jwt_required()
+def get_summary(summary_id: str) -> Response:
+    """Fetch one owned summary (same shape as list items)."""
+    return api_response(
+        get_services().summaries.get(summary_id, get_jwt_identity()), 200
+    )
+
+
 @summaries_bp.route("/<summary_id>/convert-to-tasks", methods=["POST"])
 @jwt_required()
 def convert_summary_to_task(summary_id: str) -> Response:

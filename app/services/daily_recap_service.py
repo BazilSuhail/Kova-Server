@@ -9,9 +9,9 @@ the schema (commit 4aa10cc), which is why the legacy code also raised
 """
 from __future__ import annotations
 
-from datetime import UTC, datetime
 from typing import Any
 
+from ..core.timezone import local_now
 from ..repositories.planner_repository import PlannerRepository
 from ..repositories.task_repository import TaskRepository
 
@@ -22,8 +22,8 @@ class DailyRecapService:
         self._planners = planners
 
     def get_recap(self, user_id: str) -> dict[str, Any]:
-        """Aggregate today's (UTC) tasks and planner into the recap payload."""
-        today = datetime.now(UTC)
+        """Aggregate today's (caller-local) tasks and planner into the recap payload."""
+        today = local_now()
         date_prefix = today.strftime("%Y-%m-%d")
 
         tasks = self._tasks.find_due_on(user_id, date_prefix)

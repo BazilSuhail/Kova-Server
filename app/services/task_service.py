@@ -17,6 +17,10 @@ from ..utils.llm_utils import generate_task_fields_from_llm, generate_title_from
 from ..utils.ocr_utils import extract_text_from_image
 from ..utils.title_utils import rewrite_title
 
+import logging
+
+_service_logger = logging.getLogger("kova.task_service")
+
 # Whitelist for partial updates — clients cannot rewrite ids/ownership/timestamps.
 _UPDATABLE_FIELDS = ("title", "description", "category", "dueDate", "isCompleted")
 
@@ -66,47 +70,121 @@ class TaskService:
         }
         return self._tasks.insert_task(document)
 
-    def create_from_natural_language(self, user_id: str, prompt: str) -> dict[str, Any]:
+    def create_from_natural_language(
+        self, user_id: str, prompt: str, overrides: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """Parse a free-text prompt through the LLM into a task.
 
         LLM failures surface as 400s because the legacy route caught
         ``ValueError`` and returned 400 — the prompt is the bad input there.
+
+        ``overrides`` lets the caller supply explicit values for fields the
+        LLM would otherwise extract (dueDate, category, title). Explicit
+        values take precedence over the LLM output.
         """
         try:
             fields = generate_task_fields_from_llm(prompt)
         except ValueError as exc:
             raise ValidationError(str(exc)) from exc
+        if overrides:
+            fields = {
+                **fields,
+                **{k: v for k, v in overrides.items() if v is not None},
+            }
         return self._tasks.insert_task(
             _build_document(user_id, fields, "natural-language")
         )
 
-    def create_from_voice(self, user_id: str, file_stream: Any) -> dict[str, Any]:
+    def create_from_voice(
+        self, user_id: str, file_stream: Any, due_date: str | None = None
+    ) -> dict[str, Any]:
         """Upload audio → transcribe → LLM fields → task.
 
         Failures here bubble up as 500s, matching the legacy route which only
         caught ``Exception`` and returned 500 for every voice-flow error.
         """
-        audio_url = upload_audio(file_stream)
-        transcript = transcribe_audio(audio_url)
-        fields = generate_task_fields_from_llm(transcript)
-        return self._tasks.insert_task(_build_document(user_id, fields, "voice"))
+        _service_logger.info("voice_service_start", extra={"userId": user_id})
+        try:
+            from flask import current_app
+
+            if not current_app.config.get("ASSEMBLYAI_API_KEY"):
+                _service_logger.error("voice_assemblyai_key_missing")
+            if not current_app.config.get("GROQ_API_KEY"):
+                _service_logger.error("voice_groq_key_missing")
+
+            _service_logger.info("voice_upload_step_start")
+            audio_url = upload_audio(file_stream)
+            _service_logger.info("voice_upload_step_done", extra={"hasUrl": bool(audio_url)})
+
+            _service_logger.info("voice_transcribe_step_start")
+            transcript = transcribe_audio(audio_url)
+            _service_logger.info(
+                "voice_transcribe_step_done", extra={"chars": len(transcript)}
+            )
+
+            _service_logger.info("voice_llm_step_start")
+            fields = generate_task_fields_from_llm(transcript)
+            _service_logger.info("voice_llm_step_done", extra={"title": fields.get("title", "")})
+
+            if due_date:
+                fields["dueDate"] = due_date
+
+            task = self._tasks.insert_task(_build_document(user_id, fields, "voice"))
+            _service_logger.info("voice_insert_done", extra={"taskId": task.get("taskId")})
+            return task
+        except Exception as exc:
+            _service_logger.exception("voice_service_error", extra={"error": str(exc)})
+            raise
 
     def create_from_image(
-        self, user_id: str, file_stream: Any, filename: str = "upload.jpg"
+        self, user_id: str, file_stream: Any, filename: str = "upload.jpg", due_date: str | None = None
     ) -> dict[str, Any]:
         """OCR an image (camera/scan) → LLM fields → task (feature 11).
 
         Both providers are required (OCR key + Groq key); a missing key surfaces
         as ``AIConfigError`` → 503, a malformed LLM reply as 400 (NLP contract).
         """
-        text = extract_text_from_image(file_stream, filename=filename)
+        _service_logger.info(
+            "image_service_start", extra={"userId": user_id, "uploadFilename": filename}
+        )
         try:
-            fields = generate_task_fields_from_llm(text)
-        except ValueError as exc:
-            raise ValidationError(str(exc)) from exc
-        task = self._tasks.insert_task(_build_document(user_id, fields, "image"))
-        # ``extractedText`` is echoed for transparency but never persisted.
-        return {**task, "extractedText": text}
+            from flask import current_app
+
+            if not current_app.config.get("OCR_API_KEY"):
+                _service_logger.error("image_ocr_key_missing")
+            if not current_app.config.get("GROQ_API_KEY"):
+                _service_logger.error("image_groq_key_missing")
+
+            _service_logger.info("image_ocr_step_start")
+            text = extract_text_from_image(file_stream, filename=filename)
+            _service_logger.info("image_ocr_step_done", extra={"chars": len(text)})
+
+            _service_logger.info("image_llm_step_start")
+            try:
+                fields = generate_task_fields_from_llm(text)
+            except ValueError as exc:
+                _service_logger.error("image_llm_parse_error", extra={"error": str(exc)})
+                raise ValidationError(str(exc)) from exc
+            _service_logger.info(
+                "image_llm_step_done", extra={"title": fields.get("title", "")}
+            )
+
+            if due_date:
+                fields["dueDate"] = due_date
+
+            task = self._tasks.insert_task(_build_document(user_id, fields, "image"))
+            _service_logger.info("image_insert_done", extra={"taskId": task.get("taskId")})
+            result = {**task, "extractedText": text}
+            _service_logger.info(
+                "image_service_done",
+                extra={"taskId": task.get("taskId"), "extractedTextLen": len(text)},
+            )
+            return result
+        except ValidationError:
+            raise
+        except Exception as exc:
+            _service_logger.exception("image_service_error", extra={"error": str(exc)})
+            raise
 
     def categorize(self, user_id: str, task_id: str) -> str:
         """Re-derive a task's category locally and persist it (feature 4)."""

@@ -1,7 +1,7 @@
 """Flask extension initialisation, kept out of the app factory for clarity."""
 from __future__ import annotations
 
-from flask import Flask, current_app
+from flask import Flask, Response, current_app, jsonify
 from flask_compress import Compress
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
@@ -65,7 +65,17 @@ def init_jwt(app: Flask, settings: Settings) -> None:
         # deferring keeps module import order irrelevant.
         from .services import get_services as _get_services
 
-        return _get_services().auth.is_revoked(jwt_payload.get("jti", ""))
+        return _get_services().auth.is_token_revoked(jwt_payload)
+
+    # Every JWT failure is a 401 with the API's ``{"message": ...}`` shape so the
+    # client treats it as an auth error and attempts a refresh (defaults: 422/"msg").
+    def _unauthorized(message: str) -> tuple[Response, int]:
+        return jsonify({"message": message}), 401
+
+    jwt.invalid_token_loader(_unauthorized)
+    jwt.unauthorized_loader(_unauthorized)
+    jwt.expired_token_loader(lambda _h, _p: _unauthorized("Token has expired"))
+    jwt.revoked_token_loader(lambda _h, _p: _unauthorized("Token has been revoked"))
 
 
 def init_cors(app: Flask, settings: Settings) -> None:

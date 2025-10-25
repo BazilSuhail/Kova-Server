@@ -9,6 +9,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from ..core.exceptions import ValidationError
+from ..core.timezone import local_now
 from ..repositories.planner_repository import PlannerRepository
 from ..repositories.task_repository import TaskRepository
 
@@ -22,7 +23,7 @@ class WeeklyRecapService:
         self._planners = planners
 
     def get_recap(self, user_id: str, end: str | None = None) -> dict[str, Any]:
-        """Aggregate the ``WEEK_DAYS`` days ending on ``end`` (default: today, UTC).
+        """Aggregate the ``WEEK_DAYS`` days ending on ``end`` (default: the caller's today).
 
         ``end`` must be ``YYYY-MM-DD``; anything else is a client error (400).
         """
@@ -87,7 +88,7 @@ class WeeklyRecapService:
     @staticmethod
     def _parse_end(end: str | None) -> datetime:
         if end is None:
-            return datetime.now(UTC)
+            return local_now()
         try:
             return datetime.strptime(end, _DATE_FORMAT).replace(tzinfo=UTC)
         except ValueError as exc:

@@ -23,6 +23,7 @@ from ..core.responses import api_response
 from ..core.validation import require_fields
 from ..extensions import limiter
 from ..services import get_services
+from ..utils import mailer
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -92,7 +93,7 @@ def refresh() -> Response:
     if claims.get("type") != "refresh":
         raise AuthenticationError("Not a refresh token")
     auth = get_services().auth
-    if auth.is_revoked(claims["jti"]):
+    if auth.is_token_revoked(claims):
         raise AuthenticationError("Token revoked")
     user_id = claims["sub"]
     # The account may have been deleted while the token was still live.
@@ -153,3 +154,40 @@ def change_password() -> Response:
         get_jwt_identity(), data["currentPassword"], data["newPassword"]
     )
     return api_response({"message": "Password updated"}, 200)
+
+
+@auth_bp.route("/password/forgot", methods=["POST"])
+@limiter.limit(_auth_rate)
+def forgot_password() -> Response:
+    """Email a 6-digit reset code (public).
+
+    Always 200 with the same body, whether or not the email has an account.
+    """
+    data = require_fields(
+        request.get_json(silent=True), "email", message="email is required", truthy=True
+    )
+    email = str(data["email"]).strip()
+    code = get_services().auth.request_password_reset(email)
+    if code is not None:
+        mailer.deliver_reset_code(email, code)
+    return api_response(
+        {"message": "If that email has an account, a reset code is on its way"}, 200
+    )
+
+
+@auth_bp.route("/password/reset", methods=["POST"])
+@limiter.limit(_auth_rate)
+def reset_password() -> Response:
+    """Set a new password with an emailed code; signs out every session (public)."""
+    data = require_fields(
+        request.get_json(silent=True),
+        "email",
+        "code",
+        "newPassword",
+        message="email, code and newPassword are required",
+        truthy=True,
+    )
+    get_services().auth.reset_password(
+        str(data["email"]).strip(), str(data["code"]), str(data["newPassword"])
+    )
+    return api_response({"message": "Password reset. Please log in."}, 200)

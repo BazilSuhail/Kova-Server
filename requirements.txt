@@ -15,3 +15,4 @@ waitress==3.0.2      # production WSGI server used by run.py
 sentry-sdk==2.71.0   # error tracking — active only when KOVA_SENTRY_DSN is set
 flask-compress==1.25 # gzip/brotli responses — disable with KOVA_COMPRESS_ENABLED
 APScheduler==3.11.0  # in-process scheduler for smart reminders/nudges (KOVA_SCHEDULER_ENABLED)
+tzdata==2026.5      # IANA zones for X-Timezone (zoneinfo) on hosts without a system tz database

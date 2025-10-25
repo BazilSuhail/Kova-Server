@@ -5,6 +5,8 @@ that depends on stored state happens in ``TaskService``.
 """
 from __future__ import annotations
 
+import logging
+
 from flask import Blueprint, Response, current_app, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
@@ -13,6 +15,8 @@ from ..core.responses import api_response
 from ..core.validation import require_fields
 from ..services import get_services
 from ..utils.categorization import categorize_locally
+
+logger = logging.getLogger(__name__)
 
 tasks_bp = Blueprint("tasks", __name__)
 
@@ -43,7 +47,13 @@ def create_task_from_natural_language() -> Response:
         message="prompt is required in JSON body",
     )
     task = get_services().tasks.create_from_natural_language(
-        get_jwt_identity(), data["prompt"]
+        get_jwt_identity(),
+        data["prompt"],
+        overrides={
+            "dueDate": data.get("dueDate"),
+            "category": data.get("category"),
+            "title": data.get("title"),
+        },
     )
     return api_response(task, 201)
 
@@ -51,10 +61,23 @@ def create_task_from_natural_language() -> Response:
 @tasks_bp.route("/create/voice", methods=["POST"])
 @jwt_required()
 def create_task_from_voice() -> Response:
+    logger.info("voice_route_entered", extra={"files": list(request.files.keys())})
     if "file" not in request.files:
+        logger.warning("voice_route_missing_file_field")
         return api_response({"message": "Audio file is required."}, 400)
     file = request.files["file"]
-    task = get_services().tasks.create_from_voice(get_jwt_identity(), file.stream)
+    logger.info(
+        "voice_upload_received",
+        extra={"uploadFilename": file.filename, "mimetype": file.mimetype},
+    )
+    try:
+        task = get_services().tasks.create_from_voice(
+            get_jwt_identity(), file.stream, due_date=request.form.get("dueDate")
+        )
+    except Exception as exc:
+        logger.exception("voice_route_error", extra={"error": str(exc)})
+        raise
+    logger.info("voice_route_success", extra={"taskId": task.get("taskId")})
     return api_response(task, 201)
 
 
@@ -62,11 +85,28 @@ def create_task_from_voice() -> Response:
 @jwt_required()
 def create_task_from_image() -> Response:
     """OCR an uploaded image (camera/scan) into a task (feature 11)."""
+    logger.info("image_route_entered", extra={"files": list(request.files.keys())})
     if "file" not in request.files:
+        logger.warning("image_route_missing_file_field")
         return api_response({"message": "Image file is required."}, 400)
     file = request.files["file"]
-    task = get_services().tasks.create_from_image(
-        get_jwt_identity(), file.stream, file.filename or "upload.jpg"
+    logger.info(
+        "image_upload_received",
+        extra={"uploadFilename": file.filename, "mimetype": file.mimetype},
+    )
+    try:
+        task = get_services().tasks.create_from_image(
+            get_jwt_identity(),
+            file.stream,
+            file.filename or "upload.jpg",
+            due_date=request.form.get("dueDate"),
+        )
+    except Exception as exc:
+        logger.exception("image_route_error", extra={"error": str(exc)})
+        raise
+    logger.info(
+        "image_route_success",
+        extra={"taskId": task.get("taskId"), "hasExtractedText": "extractedText" in task},
     )
     return api_response(task, 201)
 

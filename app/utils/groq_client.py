@@ -24,7 +24,7 @@ from ..core.exceptions import AIConfigError
 logger = logging.getLogger(__name__)
 
 _DEFAULT_GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-_DEFAULT_MODEL = "llama-3.3-70b-versatile"
+_DEFAULT_MODEL = "qwen/qwen3.8-27b"
 _DEFAULT_TIMEOUT_SECONDS = 60
 
 
@@ -62,6 +62,10 @@ def chat_completion(
 
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     timeout = int(current_app.config.get("LLM_TIMEOUT_SECONDS") or _DEFAULT_TIMEOUT_SECONDS)
+    logger.info(
+        "groq_request_start",
+        extra={"model": payload["model"], "maxTokens": max_tokens, "temperature": temperature},
+    )
     try:
         res = requests.post(
             current_app.config.get("GROQ_LLM_URL") or _DEFAULT_GROQ_URL,
@@ -69,9 +73,14 @@ def chat_completion(
             headers=headers,
             timeout=timeout,
         )
+        logger.info("groq_response_status", extra={"status": res.status_code})
         res.raise_for_status()
-        return res.json()["choices"][0]["message"]["content"]
+        content = res.json()["choices"][0]["message"]["content"]
+        logger.info("groq_request_done", extra={"contentChars": len(content)})
+        return content
     except requests.exceptions.RequestException as exc:
+        logger.exception("groq_request_error", extra={"status": getattr(exc, "response", None) and exc.response.status_code if hasattr(exc, "response") else None})
         raise ValueError(f"API request failed: {str(exc)}") from exc
     except (KeyError, IndexError) as exc:
+        logger.exception("groq_parse_error")
         raise ValueError(f"Failed to parse LLM response: {str(exc)}") from exc

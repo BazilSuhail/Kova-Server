@@ -90,6 +90,7 @@ def build_services(db: Database) -> Services:
     notification_service = NotificationService(notifications, tombstones)
     progress = ProgressService(tasks, moods, reflections)
     suggestions = SuggestionService(tasks, moods, reflections, reminders)
+    mood_service = MoodService(moods, tombstones)
 
     return Services(
         auth=AuthService(users, blocklist),
@@ -114,7 +115,7 @@ def build_services(db: Database) -> Services:
         summaries=SummaryService(summaries, tasks, tombstones),
         daily_recap=DailyRecapService(tasks, planners),
         weekly_recap=WeeklyRecapService(tasks, planners),
-        moods=MoodService(moods, tombstones),
+        moods=mood_service,
         reflections=ReflectionService(reflections, tombstones),
         progress=progress,
         suggestions=suggestions,
@@ -123,7 +124,8 @@ def build_services(db: Database) -> Services:
             reminders, devices, notification_service, tombstones
         ),
         dashboard=DashboardService(
-            tasks, notifications, reminders, moods, summaries, progress, suggestions
+            tasks, notifications, reminders, moods, summaries, progress, suggestions,
+            mood_service,
         ),
         sync=SyncService(
             tasks,
